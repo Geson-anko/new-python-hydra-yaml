@@ -1,0 +1,19 @@
+[project]
+name = "hydra-yaml-lsp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "GesonAnko", email = "59220704+Geson-anko@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.maturin]
+module-name = "hydra_yaml_lsp._core"
+python-packages = ["hydra_yaml_lsp"]
+python-source = "src"
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"

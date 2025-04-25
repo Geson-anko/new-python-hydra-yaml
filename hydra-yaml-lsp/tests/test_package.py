@@ -1,3 +1,5 @@
+"""Tests package top level features."""
+
 import tomllib
 from pathlib import Path
 

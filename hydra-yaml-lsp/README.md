@@ -1,0 +1,1 @@
+# Hydra YAML Language Server

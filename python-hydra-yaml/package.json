@@ -7,17 +7,30 @@
     "vscode": "^1.99.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:yaml"
+  ],
   "main": "./out/extension.js",
-  "contributes": {
+"contributes": {
     "commands": [
       {
-        "command": "python-hydra-yaml.helloWorld",
-        "title": "Hello World"
+        "command": "python-hydra-yaml.restart",
+        "title": "Restart Python Hydra YAML Language Server"
       }
-    ]
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Hydra YAML",
+      "properties": {
+        "hydraYaml.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Fallback Python executable path (used if VS Code Python extension is not available)"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
@@ -38,5 +51,12 @@
     "eslint": "^9.23.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
-  }
+  },
+  "dependencies": {
+    "@vscode/python-extension": "^1.0.5",
+    "vscode-languageclient": "^9.0.1"
+  },
+  "extensionDependencies": [
+    "ms-python.python"
+  ]
 }

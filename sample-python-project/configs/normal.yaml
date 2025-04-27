@@ -1,0 +1,24 @@
+# Normal Test Cases
+sample_project:
+  _target_: sample_python_project.YourClass
+  _convert_: none
+  _recursive_: true
+  _partial_: true
+  arg1: 784
+  arg2: 10
+
+class_method:
+  _target_: sample_python_project.YourClass.cls_method
+  arg: 0
+
+hydra:
+  _target_: hydra.utils.get_method
+  path: sample_python_project.hello
+
+# Nested references.
+nested:
+  value1: 100
+  value2: ${.value1}
+  deep:
+    value3: ${..value1}
+    value4: ${.value3}

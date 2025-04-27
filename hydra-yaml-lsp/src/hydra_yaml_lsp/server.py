@@ -24,9 +24,9 @@ class HydraYamlLanguageServer(LanguageServer):
 def start_server() -> None:
     """Start the LSP server."""
     logging.basicConfig(
-        filename="hydra-yaml-lsp.log",
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler()],
     )
     server = HydraYamlLanguageServer()
     server.start_io()

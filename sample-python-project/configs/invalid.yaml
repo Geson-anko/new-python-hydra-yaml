@@ -1,0 +1,44 @@
+# Error Test Cases
+
+# Invalid _target_ path
+bad_target:
+  _target_: not.exist.module
+
+bad_target_not_import_path:
+  _target_: bad_import_path
+
+# `_target_` is not callable
+target_is_not_callable:
+  _target_: sample_python_project.CONSTANT
+
+# Circular reference
+circular1:
+  value: ${..circular2.value}
+circular2:
+  value: ${..circular1.value}
+
+# Invalid _partial_ value
+bad_partial:
+  _target_: sample_python_project.YourClass
+  _partial_: "invalid"
+
+# Invalid _convert_ value
+bad_convert:
+  _target_: sample_python_project.YourClass
+  _convert_: "invalid"
+
+# Invalid _recursive_ value
+bad_recursive:
+  _recursive_: "invalid"
+
+# Reference exceeding file hierarchy
+out_of_bounds:
+  value: ${....value}
+
+# Non-existent reference
+missing_ref:
+  value: ${not.exist.path}
+
+# Missing path field for hydra.utils function
+missing_path:
+  _target_: hydra.utils.get_class

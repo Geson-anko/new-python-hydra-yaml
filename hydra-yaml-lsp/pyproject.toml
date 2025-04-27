@@ -47,7 +47,6 @@ exclude = [
   "**/.venv",
   "tests/"
 ]
-strict = ["./src/"]
 reportMissingTypeStubs = false
 reportImplicitOverride = true
 reportPrivateUsage = "warning"

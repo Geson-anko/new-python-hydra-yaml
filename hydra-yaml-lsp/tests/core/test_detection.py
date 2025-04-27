@@ -2,7 +2,7 @@
 
 import pytest
 
-from hydra_yaml_lsp.detection import detect_special_key
+from hydra_yaml_lsp.core.detection import detect_special_key
 
 
 class TestSpecialKeys:

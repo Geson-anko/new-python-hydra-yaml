@@ -94,3 +94,27 @@ class TestDocumentSpecialKeys:
         """Test document with various special key arrangements."""
         result = detect_special_keys_in_document(content)
         assert result == expected
+
+    def test_caching(self):
+        """Test that results are cached properly."""
+        content = "_target_: module.path\n_args_: value"
+
+        # First call should compute the result
+        result1 = detect_special_keys_in_document(content)
+
+        # Second call should use the cached result
+        result2 = detect_special_keys_in_document(content)
+
+        # Results should be identical
+        assert result1 == result2
+
+        # And should be the expected values
+        expected = (
+            SpecialKeyPosition(lineno=0, start=0, end=8, key="_target_"),
+            SpecialKeyPosition(lineno=1, start=0, end=6, key="_args_"),
+        )
+        assert result1 == expected
+
+        # Check cache info
+        info = detect_special_keys_in_document.cache_info()
+        assert info.hits >= 1

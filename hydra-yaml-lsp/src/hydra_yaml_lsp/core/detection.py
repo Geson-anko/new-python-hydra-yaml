@@ -1,6 +1,7 @@
 """Module for detecting and handling Hydra special keys in YAML files."""
 
 import re
+from functools import lru_cache
 from typing import NamedTuple
 
 
@@ -65,6 +66,7 @@ def detect_special_key(line: str) -> tuple[int, int, str] | None:
     return None
 
 
+@lru_cache
 def detect_special_keys_in_document(content: str) -> tuple[SpecialKeyPosition, ...]:
     """Detect all Hydra special keys in a YAML document.
 

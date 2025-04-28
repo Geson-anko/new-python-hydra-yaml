@@ -3,8 +3,6 @@
 import re
 from typing import NamedTuple
 
-# Cached pattern
-
 
 class SpecialKeyPosition(NamedTuple):
     """Position and information about a special key in a YAML document.
@@ -67,7 +65,7 @@ def detect_special_key(line: str) -> tuple[int, int, str] | None:
     return None
 
 
-def detect_special_keys_in_document(content: str) -> list[SpecialKeyPosition]:
+def detect_special_keys_in_document(content: str) -> tuple[SpecialKeyPosition, ...]:
     """Detect all Hydra special keys in a YAML document.
 
     Searches through each line of the document and identifies all keys
@@ -107,4 +105,4 @@ def detect_special_keys_in_document(content: str) -> list[SpecialKeyPosition]:
             # Add to results
             results.append(position)
 
-    return results
+    return tuple(results)

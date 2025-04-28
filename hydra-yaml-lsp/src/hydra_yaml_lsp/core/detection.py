@@ -1,8 +1,27 @@
 """Module for detecting and handling Hydra special keys in YAML files."""
 
 import re
+from typing import NamedTuple
 
 # Cached pattern
+
+
+class SpecialKeyPosition(NamedTuple):
+    """Position and information about a special key in a YAML document.
+
+    Attributes:
+        lineno: Line number (0-indexed) where the special key appears.
+        start: Column position where the special key starts.
+        end: Column position where the special key ends.
+        key: The special key text, including underscores.
+    """
+
+    lineno: int
+    start: int
+    end: int
+    key: str
+
+
 SPECIAL_KEY_PATTERN = re.compile(r"(_[a-zA-Z0-9_]+_)\s*:")
 
 
@@ -46,3 +65,46 @@ def detect_special_key(line: str) -> tuple[int, int, str] | None:
 
     # Return None if no match is found
     return None
+
+
+def detect_special_keys_in_document(content: str) -> list[SpecialKeyPosition]:
+    """Detect all Hydra special keys in a YAML document.
+
+    Searches through each line of the document and identifies all keys
+    surrounded by underscores (e.g., _target_, _args_) followed by colons.
+
+    Args:
+        content: A string representing the entire YAML document.
+
+    Returns:
+        A list of SpecialKeyPosition objects, each containing information
+        about a special key found in the document.
+
+    Examples:
+        >>> content = "_target_: module.path\\nregular: value\\n  _args_: value"
+        >>> result = detect_special_keys_in_document(content)
+        >>> [(pos.lineno, pos.start, pos.end, pos.key) for pos in result]
+        [(0, 0, 8, '_target_'), (2, 2, 8, '_args_')]
+    """
+    results: list[SpecialKeyPosition] = []
+
+    # Split the content into lines
+    lines = content.splitlines()
+
+    for lineno, line in enumerate(lines):
+        # Detect special key in the current line
+        key_result = detect_special_key(line)
+
+        if key_result:
+            # Unpack the result
+            start_in_line, end_in_line, key = key_result
+
+            # Create a SpecialKeyPosition instance
+            position = SpecialKeyPosition(
+                lineno=lineno, start=start_in_line, end=end_in_line, key=key
+            )
+
+            # Add to results
+            results.append(position)
+
+    return results

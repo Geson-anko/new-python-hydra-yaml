@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../"
+		},
+		{
+			"path": "../hydra-yaml-lsp"
+		},
+		{
+			"path": "../python-hydra-yaml"
+		}
+	],
+	"settings": {}
+}

@@ -1,11 +1,12 @@
 """Module for detecting and handling Hydra special keys in YAML files."""
 
 import re
+from dataclasses import dataclass
 from functools import lru_cache
-from typing import NamedTuple
 
 
-class SpecialKeyPosition(NamedTuple):
+@dataclass(frozen=True)
+class SpecialKeyPosition:
     """Position and information about a special key in a YAML document.
 
     Attributes:

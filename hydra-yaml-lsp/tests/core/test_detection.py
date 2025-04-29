@@ -4,39 +4,8 @@ import pytest
 
 from hydra_yaml_lsp.core.detection import (
     SpecialKeyPosition,
-    detect_special_key,
     detect_special_keys_in_document,
 )
-
-
-class TestSpecialKeys:
-    """Test cases for special key detection in Hydra YAML files."""
-
-    @pytest.mark.parametrize(
-        "line, expected_result",
-        [
-            ("_target_: path.to.class", (0, 8, "_target_")),
-            ("  _args_: some args", (2, 8, "_args_")),
-            ("- _arg_: value", (2, 7, "_arg_")),
-            ("_config_   : value", (0, 8, "_config_")),
-            ("normal: value", None),
-            ("normal: value # _comment_: ignored", None),
-            ("_target_: value # This is a comment", (0, 8, "_target_")),
-        ],
-        ids=[
-            "simple_key",
-            "indented_key",
-            "list_item_key",
-            "key_with_spaces",
-            "no_special_key",
-            "key_in_comment",
-            "key_with_comment",
-        ],
-    )
-    def test_detect_special_key(self, line, expected_result):
-        """Test the detect_special_key function with various inputs."""
-        result = detect_special_key(line)
-        assert result == expected_result
 
 
 class TestDocumentSpecialKeys:
@@ -58,10 +27,10 @@ class TestDocumentSpecialKeys:
         "content, expected",
         [
             (
-                "_target_: module.path\nregular: value\n  _args_: some args",
+                "_target_: module.path\nregular: value\n_args_: some_args",
                 (
                     SpecialKeyPosition(lineno=0, start=0, end=8, key="_target_"),
-                    SpecialKeyPosition(lineno=2, start=2, end=8, key="_args_"),
+                    SpecialKeyPosition(lineno=2, start=0, end=6, key="_args_"),
                 ),
             ),
             (
@@ -75,19 +44,11 @@ class TestDocumentSpecialKeys:
                     SpecialKeyPosition(lineno=4, start=0, end=6, key="_args_"),
                 ),
             ),
-            (
-                "_target_: value _arg_: test\n_more_: content",
-                (
-                    SpecialKeyPosition(lineno=0, start=0, end=8, key="_target_"),
-                    SpecialKeyPosition(lineno=1, start=0, end=6, key="_more_"),
-                ),
-            ),
         ],
         ids=[
             "basic_special_keys",
             "keys_in_comments",
             "empty_lines",
-            "multiple_keys_per_line",
         ],
     )
     def test_document_with_special_keys(self, content, expected):

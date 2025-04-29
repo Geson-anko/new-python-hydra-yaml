@@ -107,8 +107,8 @@ class TestInterpolationDetection:
         assert result[0].content == "${path.to.value}"
         assert result[0].start_line == 0
         assert result[0].end_line == 0
-        assert result[0].start_col == len("value: ")
-        assert result[0].end_col == len(content)
+        assert result[0].start_column == len("value: ")
+        assert result[0].end_column == len(content)
 
     def test_multiple_interpolations(self):
         """Test with multiple interpolations in the same document."""
@@ -119,16 +119,16 @@ class TestInterpolationDetection:
         # First interpolation
         assert result[0].content == "${path1}"
         assert result[0].start_line == 0
-        assert result[0].start_col == len("value1: ")
+        assert result[0].start_column == len("value1: ")
         assert result[0].end_line == 0
-        assert result[0].end_col == len("value1: ${path1}")
+        assert result[0].end_column == len("value1: ${path1}")
 
         # Second interpolation
         assert result[1].content == "${path2}"
         assert result[1].start_line == 1
-        assert result[1].start_col == len("value2: ")
+        assert result[1].start_column == len("value2: ")
         assert result[1].end_line == 1
-        assert result[1].end_col == len("value2: ${path2}")
+        assert result[1].end_column == len("value2: ${path2}")
 
     def test_multiline_interpolation(self):
         """Test with interpolation spanning multiple lines."""
@@ -146,9 +146,9 @@ class TestInterpolationDetection:
         assert interp.content
         # Position verification
         assert interp.start_line == 1  # Line after "value: >-"
-        assert interp.start_col == len(indent)
+        assert interp.start_column == len(indent)
         assert interp.end_line == 3  # The closing bracket line
-        assert interp.end_col == len(indent) + 1  # indent + }
+        assert interp.end_column == len(indent) + 1  # indent + }
         # Verify the content contains the full interpolation
         assert "${" in interp.content
         assert "path.to.value" in interp.content
@@ -163,9 +163,9 @@ class TestInterpolationDetection:
         assert result[0].content == "${function:arg1,arg2}"
         # Position verification
         assert result[0].start_line == 0
-        assert result[0].start_col == len("value: ")
+        assert result[0].start_column == len("value: ")
         assert result[0].end_line == 0
-        assert result[0].end_col == len(content)
+        assert result[0].end_column == len(content)
 
     def test_complex_interpolation(self):
         """Test with a complex interpolation containing nested calls and
@@ -183,9 +183,9 @@ class TestInterpolationDetection:
         assert len(result) == 3
         outer = result[0]
         assert outer.start_line < outer.end_line  # Spans multiple lines
-        assert outer.start_col == len(indent)
+        assert outer.start_column == len(indent)
         assert outer.end_line == 4  # Line with closing bracket
-        assert outer.end_col == len(indent) + len('"}')
+        assert outer.end_column == len(indent) + len('"}')
         assert "${python.eval:" in outer.content
         assert "${shared.width}" in outer.content
         assert "${models.encoder.patch_size}" in outer.content
@@ -195,13 +195,13 @@ class TestInterpolationDetection:
         assert patch_size.content == "${models.encoder.patch_size}"
         assert patch_size.start_line == 3
         assert patch_size.end_line == 3
-        assert patch_size.start_col == len(indent)
-        assert patch_size.end_col == len(indent + "${models.encoder.patch_size}")
+        assert patch_size.start_column == len(indent)
+        assert patch_size.end_column == len(indent + "${models.encoder.patch_size}")
 
         # Inner interpolations - ${shared.width}
         shared_width = result[2]
         assert shared_width.content == "${shared.width}"
         assert shared_width.start_line == 2
         assert shared_width.end_line == 2
-        assert shared_width.start_col == len(indent)
-        assert shared_width.end_col == len(indent + "${shared.width}")
+        assert shared_width.start_column == len(indent)
+        assert shared_width.end_column == len(indent + "${shared.width}")

@@ -81,9 +81,9 @@ class InterpolationPosition:
     """
 
     start_line: int
-    start_col: int
+    start_column: int
     end_line: int
-    end_col: int
+    end_column: int
     content: str
 
 
@@ -174,9 +174,9 @@ def _extract_interpolation_pos_in_value(
                 results.append(
                     InterpolationPosition(
                         start_line=interp_start_line,
-                        start_col=interp_start_col,
+                        start_column=interp_start_col,
                         end_line=line_idx,
-                        end_col=col_idx + 1,
+                        end_column=col_idx + 1,
                         content=interp_content,
                     )
                 )

@@ -181,22 +181,20 @@ def detect_special_keys_in_document(content: str) -> tuple[SpecialKeyPosition, .
     """
     results: list[SpecialKeyPosition] = []
 
-    prev_token_type = None
-    token: yaml.Token
-    for token in yaml.YAML().scan(content):
-        if prev_token_type is yaml.KeyToken and isinstance(token, yaml.ScalarToken):
-            val = str(token.value)
+    stream = yaml.YAML().scan(content)
+    while (token := next(stream, None)) is not None:
+        if isinstance(token, yaml.KeyToken):
+            next_token: yaml.ScalarToken = next(stream)
+            val = str(next_token.value)
             if val in HydraSpecialKey:
                 results.append(
                     SpecialKeyPosition(
-                        token.start_mark.line,
-                        token.start_mark.column,
-                        token.end_mark.column,
+                        next_token.start_mark.line,
+                        next_token.start_mark.column,
+                        next_token.end_mark.column,
                         val,
                     )
                 )
-
-        prev_token_type = type(token)
     return tuple(results)
 
 
@@ -218,13 +216,14 @@ def detect_interpolation_pos_in_document(
     """
     results: list[InterpolationPosition] = []
 
-    prev_token_type = None
     content_lines = content.splitlines()
+    stream = yaml.YAML().scan(content)
 
-    for token in yaml.YAML().scan(content):
-        if prev_token_type is yaml.ValueToken and isinstance(token, yaml.ScalarToken):
-            results.extend(_extract_interpolation_pos_in_value(token, content_lines))
-        prev_token_type = type(token)
+    while (token := next(stream, None)) is not None:
+        if isinstance(token, yaml.ValueToken):
+            results.extend(
+                _extract_interpolation_pos_in_value(next(stream), content_lines)
+            )
     return tuple(results)
 
 

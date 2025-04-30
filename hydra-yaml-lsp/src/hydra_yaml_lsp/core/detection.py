@@ -30,8 +30,8 @@ class SpecialKeyPosition:
 
 
 @dataclass(frozen=True)
-class HighlightPosition:
-    """Position for syntax highlighting in a document.
+class InterpolationHighlight:
+    """Interpolation highlighting in a document.
 
     Attributes:
         start_line: Line number (0-indexed) where the highlight starts
@@ -46,15 +46,6 @@ class HighlightPosition:
     end_column: int
     token_type: Literal["reference", "function"]
     content: str
-
-    @property
-    def end_line(self) -> int:
-        """Line number where the highlight ends (same as start_line).
-
-        Returns:
-            Same value as start_line since highlights are contained within a single line
-        """
-        return self.start_line
 
 
 @dataclass(frozen=True)
@@ -75,7 +66,7 @@ class InterpolationPosition:
     end_column: int
     content: str
 
-    def get_highlight_position(self) -> HighlightPosition | None:
+    def get_highlight_position(self) -> InterpolationHighlight | None:
         """Get the appropriate highlight position from this interpolation.
 
         This method tries to find a suitable highlighting position by first
@@ -93,7 +84,7 @@ class InterpolationPosition:
         if pos:
             return pos
 
-    def get_reference_highlight(self) -> HighlightPosition | None:
+    def get_reference_highlight(self) -> InterpolationHighlight | None:
         """Extract reference part from interpolation as a highlight position.
 
         Returns:
@@ -121,7 +112,7 @@ class InterpolationPosition:
                 ref_start = line.find(reference)
                 line_offset = self.start_column if i == 0 else 0
 
-                return HighlightPosition(
+                return InterpolationHighlight(
                     start_line=self.start_line + i,
                     start_column=line_offset + ref_start,
                     end_column=line_offset + ref_start + len(reference),
@@ -131,7 +122,7 @@ class InterpolationPosition:
 
         return None
 
-    def get_function_highlight(self) -> HighlightPosition | None:
+    def get_function_highlight(self) -> InterpolationHighlight | None:
         """Extract function part from interpolation as a highlight position.
 
         Returns:
@@ -156,7 +147,7 @@ class InterpolationPosition:
                 line_offset = self.start_line + line_idx
                 col_offset = self.start_column if line_idx == 0 else 0
 
-                return HighlightPosition(
+                return InterpolationHighlight(
                     start_line=line_offset,
                     start_column=col_offset + func_start,
                     end_column=col_offset + func_start + len(function),

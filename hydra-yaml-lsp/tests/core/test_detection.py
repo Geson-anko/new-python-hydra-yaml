@@ -5,7 +5,7 @@ from textwrap import dedent
 import pytest
 
 from hydra_yaml_lsp.core.detection import (
-    HighlightPosition,
+    InterpolationHighlight,
     InterpolationPosition,
     SpecialKeyPosition,
     detect_interpolation_pos_in_document,
@@ -86,12 +86,12 @@ class TestDocumentSpecialKeys:
         assert info.hits >= 1
 
 
-class TestHighlightPosition:
-    """Test cases for the HighlightPosition class."""
+class TestInterpolationHighlight:
+    """Test cases for the InterpolationHighlight class."""
 
     def test_highlight_position_properties(self):
-        """Test the properties of HighlightPosition class."""
-        pos = HighlightPosition(
+        """Test the properties of InterpolationHighlight class."""
+        pos = InterpolationHighlight(
             start_line=5,
             start_column=10,
             end_column=20,
@@ -104,7 +104,6 @@ class TestHighlightPosition:
         assert pos.end_column == 20
         assert pos.token_type == "reference"
         assert pos.content == "test.reference"
-        assert pos.end_line == pos.start_line  # end_line is derived property
 
 
 class TestInterpolationHighlightExtraction:

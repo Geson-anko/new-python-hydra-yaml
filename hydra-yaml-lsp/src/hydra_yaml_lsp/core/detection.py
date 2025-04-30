@@ -66,7 +66,7 @@ class InterpolationPosition:
     end_column: int
     content: str
 
-    def get_highlight_position(self) -> InterpolationHighlight | None:
+    def get_highlight(self) -> InterpolationHighlight | None:
         """Get the appropriate highlight position from this interpolation.
 
         This method tries to find a suitable highlighting position by first

@@ -193,8 +193,8 @@ class TestInterpolationHighlightExtraction:
         assert highlight.start_column == 14  # Position after "${  "
         assert highlight.token_type == "function"
 
-    def test_get_highlight_position_reference(self):
-        """Test get_highlight_position for reference interpolation."""
+    def test_get_highlight_reference(self):
+        """Test get_highlight for reference interpolation."""
         interp = InterpolationPosition(
             start_line=5,
             start_column=10,
@@ -203,13 +203,13 @@ class TestInterpolationHighlightExtraction:
             content="${reference.path}",
         )
 
-        highlight = interp.get_highlight_position()
+        highlight = interp.get_highlight()
         assert highlight is not None
         assert highlight.token_type == "reference"
         assert highlight.content == "reference.path"
 
-    def test_get_highlight_position_function(self):
-        """Test get_highlight_position for function interpolation."""
+    def test_get_highlight_function(self):
+        """Test get_highlight for function interpolation."""
         interp = InterpolationPosition(
             start_line=5,
             start_column=10,
@@ -218,7 +218,7 @@ class TestInterpolationHighlightExtraction:
             content="${function:arg1,arg2}",
         )
 
-        highlight = interp.get_highlight_position()
+        highlight = interp.get_highlight()
         assert highlight is not None
         assert highlight.token_type == "function"
         assert highlight.content == "function"
@@ -292,7 +292,7 @@ class TestInterpolationHighlightExtraction:
 
         assert interp.get_reference_highlight() is None
         assert interp.get_function_highlight() is None
-        assert interp.get_highlight_position() is None
+        assert interp.get_highlight() is None
 
     def test_empty_reference(self):
         """Test with empty reference."""

@@ -274,7 +274,12 @@ class TestInterpolationHighlightExtraction:
 
         # Implementation searches for function in first line only
         highlight = interp.get_function_highlight()
-        assert highlight is None
+        assert highlight is not None
+        assert highlight.start_line == 6  # Line after start
+        assert highlight.start_column == 0  # At beginning of line
+        assert highlight.end_column == len("function")
+        assert highlight.token_type == "function"
+        assert highlight.content == "function"
 
     def test_malformed_interpolation(self):
         """Test with malformed interpolation content."""

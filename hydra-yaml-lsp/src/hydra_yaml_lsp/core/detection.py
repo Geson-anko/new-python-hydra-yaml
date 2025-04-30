@@ -147,22 +147,24 @@ class InterpolationPosition:
         if not function:
             return None
 
-        # Function part must be in the first line (from ${ to :)
+        # Find in which line the function appears
         lines = self.content.splitlines()
-        first_line = lines[0]
+        for line_idx, line in enumerate(lines):
+            func_start = line.find(function)
+            if func_start != -1:
+                # Calculate absolute position
+                line_offset = self.start_line + line_idx
+                col_offset = self.start_column if line_idx == 0 else 0
 
-        # Calculate function position
-        func_start = first_line.find(function)
-        if func_start == -1:
-            return None
+                return HighlightPosition(
+                    start_line=line_offset,
+                    start_column=col_offset + func_start,
+                    end_column=col_offset + func_start + len(function),
+                    token_type="function",
+                    content=function,
+                )
 
-        return HighlightPosition(
-            start_line=self.start_line,
-            start_column=self.start_column + func_start,
-            end_column=self.start_column + func_start + len(function),
-            token_type="function",
-            content=function,
-        )
+        return None
 
 
 @lru_cache

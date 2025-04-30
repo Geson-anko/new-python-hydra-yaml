@@ -1,7 +1,5 @@
 from textwrap import dedent
 
-import pytest
-
 from hydra_yaml_lsp.core.detections.target_value import (
     TargetValuePosition,
     detect_target_values,
@@ -126,3 +124,131 @@ class TestTargetValueDetection:
         # Check cache info
         info = detect_target_values.cache_info()
         assert info.hits >= 1
+
+
+class TestTargetValueHighlights:
+    """Tests for target value highlights functionality."""
+
+    def test_module_detection(self):
+        """Test detection of Python modules."""
+        yaml_content = """
+        module:
+          _target_: tests.target_objects
+        """
+        target = detect_target_values(yaml_content)[0]
+        highlights = target.get_highlights()
+
+        # Verify correct number of components
+        assert len(highlights) == 2
+
+        # Verify all components are detected as modules
+        assert all(h.object_type == "module" for h in highlights)
+
+        # Verify content of components
+        assert [h.content for h in highlights] == ["tests", "target_objects"]
+
+    def test_variable_detection(self):
+        """Test detection of Python variables."""
+        yaml_content = """
+        var:
+          _target_: tests.target_objects.variable
+        """
+        target = detect_target_values(yaml_content)[0]
+        highlights = target.get_highlights()
+
+        # Verify the last component is a variable
+        assert highlights[-1].object_type == "variable"
+        assert highlights[-1].content == "variable"
+
+    def test_constant_detection(self):
+        """Test detection of Python constants."""
+        yaml_content = """
+        const:
+          _target_: tests.target_objects.CONSTANT
+        """
+        target = detect_target_values(yaml_content)[0]
+        highlights = target.get_highlights()
+
+        # Verify the last component is a constant
+        assert highlights[-1].object_type == "constant"
+        assert highlights[-1].content == "CONSTANT"
+
+    def test_function_detection(self):
+        """Test detection of Python functions."""
+        yaml_content = """
+        func:
+          _target_: tests.target_objects.function
+        """
+        target = detect_target_values(yaml_content)[0]
+        highlights = target.get_highlights()
+
+        # Verify the last component is a function
+        assert highlights[-1].object_type == "function"
+        assert highlights[-1].content == "function"
+
+    def test_class_detection(self):
+        """Test detection of Python classes."""
+        yaml_content = """
+        class:
+          _target_: tests.target_objects.Class
+        """
+        target = detect_target_values(yaml_content)[0]
+        highlights = target.get_highlights()
+
+        # Verify the last component is a class
+        assert highlights[-1].object_type == "class"
+        assert highlights[-1].content == "Class"
+
+    def test_class_attribute_detection(self):
+        """Test detection of class attributes."""
+        yaml_content = """
+        class_var:
+          _target_: tests.target_objects.Class.class_var
+        class_const:
+          _target_: tests.target_objects.Class.CLASS_CONST
+        """
+        targets = detect_target_values(yaml_content)
+
+        # Test class variable
+        var_highlights = targets[0].get_highlights()
+        assert var_highlights[-1].object_type == "variable"
+        assert var_highlights[-1].content == "class_var"
+
+        # Test class constant
+        const_highlights = targets[1].get_highlights()
+        assert const_highlights[-1].object_type == "constant"
+        assert const_highlights[-1].content == "CLASS_CONST"
+
+    def test_class_method_detection(self):
+        """Test detection of class methods."""
+        yaml_content = """
+        static_method:
+          _target_: tests.target_objects.Class.static_method
+        class_method:
+          _target_: tests.target_objects.Class.class_method
+        """
+        targets = detect_target_values(yaml_content)
+
+        # Test static method
+        static_highlights = targets[0].get_highlights()
+        assert static_highlights[-1].object_type == "function"
+        assert static_highlights[-1].content == "static_method"
+
+        # Test class method
+        class_method_highlights = targets[1].get_highlights()
+        assert class_method_highlights[-1].object_type == "function"
+        assert class_method_highlights[-1].content == "class_method"
+
+    def test_position_calculation(self):
+        """Test correct position calculation of highlights."""
+        yaml_content = "_target_: tests.core"
+        target = detect_target_values(yaml_content)[0]
+        highlights = target.get_highlights()
+
+        # First component starts at target.start
+        assert highlights[0].start == len("_target_: ")
+        assert highlights[0].end == len("_target_: tests")
+
+        # Second component accounts for the dot
+        assert highlights[1].start == len("_target_: tests.")
+        assert highlights[1].end == highlights[1].start + len("core")

@@ -160,7 +160,7 @@ class InterpolationPosition:
 
 
 @lru_cache
-def detect_special_keys_in_document(content: str) -> tuple[SpecialKeyPosition, ...]:
+def detect_special_keys(content: str) -> tuple[SpecialKeyPosition, ...]:
     """Detect all Hydra special keys in a YAML document.
 
     Searches through each line of the document and identifies all keys
@@ -199,7 +199,7 @@ def detect_special_keys_in_document(content: str) -> tuple[SpecialKeyPosition, .
 
 
 @lru_cache
-def detect_interpolation_pos_in_document(
+def detect_interpolation_positions(
     content: str,
 ) -> tuple[InterpolationPosition, ...]:
     """Detect all Hydra interpolations (${...}) in a YAML document.

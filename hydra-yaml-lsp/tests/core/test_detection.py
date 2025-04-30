@@ -8,8 +8,8 @@ from hydra_yaml_lsp.core.detection import (
     InterpolationHighlight,
     InterpolationPosition,
     SpecialKeyPosition,
-    detect_interpolation_pos_in_document,
-    detect_special_keys_in_document,
+    detect_interpolation_positions,
+    detect_special_keys,
 )
 
 
@@ -19,13 +19,13 @@ class TestDocumentSpecialKeys:
 
     def test_empty_document(self):
         """Test with an empty document."""
-        result = detect_special_keys_in_document("")
+        result = detect_special_keys("")
         assert result == ()
 
     def test_document_with_no_special_keys(self):
         """Test with a document containing no special keys."""
         content = "regular: value\nanother: item\nthird: element"
-        result = detect_special_keys_in_document(content)
+        result = detect_special_keys(content)
         assert result == ()
 
     @pytest.mark.parametrize(
@@ -58,11 +58,11 @@ class TestDocumentSpecialKeys:
     )
     def test_document_with_special_keys(self, content, expected):
         """Test document with various special key arrangements."""
-        result = detect_special_keys_in_document(content)
+        result = detect_special_keys(content)
         assert result == expected
 
     def test_not_hydra_special_key(self):
-        result = detect_special_keys_in_document("_nothydraspecial_: value")
+        result = detect_special_keys("_nothydraspecial_: value")
         assert len(result) == 0
 
     def test_caching(self):
@@ -70,10 +70,10 @@ class TestDocumentSpecialKeys:
         content = "_target_: module.path\n_args_: value"
 
         # First call should compute the result
-        result1 = detect_special_keys_in_document(content)
+        result1 = detect_special_keys(content)
 
         # Second call should use the cached result
-        result2 = detect_special_keys_in_document(content)
+        result2 = detect_special_keys(content)
 
         # Results should be identical
         assert result1 == result2
@@ -86,7 +86,7 @@ class TestDocumentSpecialKeys:
         assert result1 == expected
 
         # Check cache info
-        info = detect_special_keys_in_document.cache_info()
+        info = detect_special_keys.cache_info()
         assert info.hits >= 1
 
 
@@ -328,19 +328,19 @@ class TestInterpolationDetection:
 
     def test_empty_document(self):
         """Test with an empty document."""
-        result = detect_interpolation_pos_in_document("")
+        result = detect_interpolation_positions("")
         assert result == ()
 
     def test_document_with_no_interpolations(self):
         """Test with a document containing no interpolations."""
         content = "regular: value\nanother: item\nthird: element"
-        result = detect_interpolation_pos_in_document(content)
+        result = detect_interpolation_positions(content)
         assert result == ()
 
     def test_simple_interpolation(self):
         """Test with a simple interpolation."""
         content = "value: ${path.to.value}"
-        result = detect_interpolation_pos_in_document(content)
+        result = detect_interpolation_positions(content)
 
         assert len(result) == 1
         assert result[0].content == "${path.to.value}"
@@ -352,7 +352,7 @@ class TestInterpolationDetection:
     def test_multiple_interpolations(self):
         """Test with multiple interpolations in the same document."""
         content = "value1: ${path1}\nvalue2: ${path2}"
-        result = detect_interpolation_pos_in_document(content)
+        result = detect_interpolation_positions(content)
 
         assert len(result) == 2
         # First interpolation
@@ -378,7 +378,7 @@ class TestInterpolationDetection:
               }""")
         indent = "  "
 
-        result = detect_interpolation_pos_in_document(content)
+        result = detect_interpolation_positions(content)
 
         assert len(result) == 1
         interp = result[0]
@@ -396,7 +396,7 @@ class TestInterpolationDetection:
     def test_function_interpolation(self):
         """Test with function-style interpolation containing args."""
         content = "value: ${function:arg1,arg2}"
-        result = detect_interpolation_pos_in_document(content)
+        result = detect_interpolation_positions(content)
 
         assert len(result) == 1
         assert result[0].content == "${function:arg1,arg2}"
@@ -417,7 +417,7 @@ class TestInterpolationDetection:
               "}""")
         indent = "  "
 
-        result = detect_interpolation_pos_in_document(content)
+        result = detect_interpolation_positions(content)
 
         assert len(result) == 3
         outer = result[0]

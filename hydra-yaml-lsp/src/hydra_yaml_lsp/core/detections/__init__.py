@@ -4,6 +4,7 @@ from .interpolation import (
     detect_interpolation_positions,
 )
 from .special_key import SpecialKeyPosition, detect_special_keys
+from .target_value import TargetValuePosition, detect_target_values
 
 __all__ = [
     "SpecialKeyPosition",
@@ -11,4 +12,6 @@ __all__ = [
     "InterpolationHighlight",
     "InterpolationPosition",
     "detect_interpolation_positions",
+    "TargetValuePosition",
+    "detect_target_values",
 ]

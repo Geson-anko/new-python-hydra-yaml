@@ -5,6 +5,8 @@ from textwrap import dedent
 import pytest
 
 from hydra_yaml_lsp.core.detection import (
+    HighlightPosition,
+    InterpolationPosition,
     SpecialKeyPosition,
     detect_interpolation_pos_in_document,
     detect_special_keys_in_document,
@@ -82,6 +84,235 @@ class TestDocumentSpecialKeys:
         # Check cache info
         info = detect_special_keys_in_document.cache_info()
         assert info.hits >= 1
+
+
+class TestHighlightPosition:
+    """Test cases for the HighlightPosition class."""
+
+    def test_highlight_position_properties(self):
+        """Test the properties of HighlightPosition class."""
+        pos = HighlightPosition(
+            start_line=5,
+            start_column=10,
+            end_column=20,
+            token_type="reference",
+            content="test.reference",
+        )
+
+        assert pos.start_line == 5
+        assert pos.start_column == 10
+        assert pos.end_column == 20
+        assert pos.token_type == "reference"
+        assert pos.content == "test.reference"
+        assert pos.end_line == pos.start_line  # end_line is derived property
+
+
+class TestInterpolationHighlightExtraction:
+    """Test cases for extracting highlights from interpolations."""
+
+    def test_get_reference_highlight_simple(self):
+        """Test extraction of simple reference highlight."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=30,
+            content="${reference.path}",
+        )
+
+        highlight = interp.get_reference_highlight()
+        assert highlight is not None
+        assert highlight.start_line == 5
+        assert highlight.start_column == 12  # Position of "reference.path"
+        assert highlight.end_column == 26  # End position of "reference.path"
+        assert highlight.token_type == "reference"
+        assert highlight.content == "reference.path"
+
+    def test_get_reference_highlight_with_spaces(self):
+        """Test extraction of reference with spaces."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=34,
+            content="${  reference.path  }",
+        )
+
+        highlight = interp.get_reference_highlight()
+        assert highlight is not None
+        assert highlight.content == "reference.path"
+        assert highlight.start_line == 5
+        assert highlight.start_column == 14  # Position after "${  "
+        assert highlight.token_type == "reference"
+
+    def test_get_reference_highlight_function_returns_none(self):
+        """Test that reference highlight returns None for function
+        interpolations."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=40,
+            content="${function:arg1,arg2}",
+        )
+
+        highlight = interp.get_reference_highlight()
+        assert highlight is None
+
+    def test_get_function_highlight_simple(self):
+        """Test extraction of simple function highlight."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=40,
+            content="${function:arg1,arg2}",
+        )
+
+        highlight = interp.get_function_highlight()
+        assert highlight is not None
+        assert highlight.start_line == 5
+        assert highlight.start_column == 12  # Position of "function"
+        assert highlight.end_column == 20  # End position of "function"
+        assert highlight.token_type == "function"
+        assert highlight.content == "function"
+
+    def test_get_function_highlight_with_spaces(self):
+        """Test extraction of function with spaces."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=44,
+            content="${  function  :arg1,arg2}",
+        )
+
+        highlight = interp.get_function_highlight()
+        assert highlight is not None
+        assert highlight.content == "function"
+        assert highlight.start_line == 5
+        assert highlight.start_column == 14  # Position after "${  "
+        assert highlight.token_type == "function"
+
+    def test_get_highlight_position_reference(self):
+        """Test get_highlight_position for reference interpolation."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=30,
+            content="${reference.path}",
+        )
+
+        highlight = interp.get_highlight_position()
+        assert highlight is not None
+        assert highlight.token_type == "reference"
+        assert highlight.content == "reference.path"
+
+    def test_get_highlight_position_function(self):
+        """Test get_highlight_position for function interpolation."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=40,
+            content="${function:arg1,arg2}",
+        )
+
+        highlight = interp.get_highlight_position()
+        assert highlight is not None
+        assert highlight.token_type == "function"
+        assert highlight.content == "function"
+
+    def test_multiline_reference(self):
+        """Test reference highlight extraction from multi-line
+        interpolation."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=7,
+            end_column=5,
+            content="${\nreference.path\n}",
+        )
+
+        highlight = interp.get_reference_highlight()
+        assert highlight is not None
+        assert highlight.start_line == 6  # Line after start
+        assert highlight.start_column == 0  # At beginning of line
+        assert highlight.end_column == len("reference.path")
+        assert highlight.content == "reference.path"
+
+    def test_function_in_first_line(self):
+        """Test function highlight extraction where function is in first
+        line."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=7,
+            end_column=5,
+            content="${function:\narg1,arg2\n}",
+        )
+
+        highlight = interp.get_function_highlight()
+        assert highlight is not None
+        assert highlight.start_line == 5  # Same as interpolation start
+        assert highlight.start_column == 12  # Position of "function"
+        assert highlight.end_column == 20  # End position of "function"
+        assert highlight.token_type == "function"
+        assert highlight.content == "function"
+
+    def test_function_not_in_first_line(self):
+        """Test that function highlight returns None if function is not in
+        first line."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=7,
+            end_column=5,
+            content="${\nfunction:\narg1,arg2\n}",
+        )
+
+        # Implementation searches for function in first line only
+        highlight = interp.get_function_highlight()
+        assert highlight is None
+
+    def test_malformed_interpolation(self):
+        """Test with malformed interpolation content."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=15,
+            content="${}",  # Empty interpolation
+        )
+
+        assert interp.get_reference_highlight() is None
+        assert interp.get_function_highlight() is None
+        assert interp.get_highlight_position() is None
+
+    def test_empty_reference(self):
+        """Test with empty reference."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=17,
+            content="${  }",  # Reference with spaces only
+        )
+
+        assert interp.get_reference_highlight() is None
+
+    def test_empty_function(self):
+        """Test with empty function."""
+        interp = InterpolationPosition(
+            start_line=5,
+            start_column=10,
+            end_line=5,
+            end_column=17,
+            content="${  :}",  # Function with empty name
+        )
+
+        assert interp.get_function_highlight() is None
 
 
 class TestInterpolationDetection:

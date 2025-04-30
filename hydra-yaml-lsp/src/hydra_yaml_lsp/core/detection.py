@@ -3,6 +3,7 @@
 import re
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Literal
 
 from ruamel import yaml
 
@@ -69,6 +70,38 @@ def detect_special_keys_in_document(content: str) -> tuple[SpecialKeyPosition, .
 
 
 @dataclass(frozen=True)
+class HighlightPosition:
+    """Position for syntax highlighting in a document.
+
+    Attributes:
+        start_line: Line number (0-indexed) where the highlight starts
+        start_column: Column position where the highlight starts
+        end_column: Column position where the highlight ends
+        token_type: Type of token being highlighted ("reference" or "function")
+        content: Content for highlight.
+    """
+
+    start_line: int
+    start_column: int
+    end_column: int
+    token_type: Literal["reference", "function"]
+    content: str
+
+    @property
+    def end_line(self) -> int:
+        """Line number where the highlight ends (same as start_line).
+
+        Returns:
+            Same value as start_line since highlights are contained within a single line
+        """
+        return self.start_line
+
+
+REFERENCE_PATTERN = re.compile(r"\$\{([^{}]+)\}")
+FUNCTION_PATTERN = re.compile(r"\$\{([^:{}]+):")
+
+
+@dataclass(frozen=True)
 class InterpolationPosition:
     """Position and information about a Hydra interpolation in a YAML document.
 
@@ -85,6 +118,95 @@ class InterpolationPosition:
     end_line: int
     end_column: int
     content: str
+
+    def get_highlight_position(self) -> HighlightPosition | None:
+        """Get the appropriate highlight position from this interpolation.
+
+        This method tries to find a suitable highlighting position by first
+        checking for a reference pattern, then for a function pattern. It provides
+        a single entry point for extracting highlightable elements from interpolations.
+
+        Returns:
+            HighlightPosition representing either a reference or function part
+            of the interpolation, or None if neither is found
+        """
+        pos = self.get_reference_highlight()
+        if pos:
+            return pos
+        pos = self.get_function_highlight()
+        if pos:
+            return pos
+
+    def get_reference_highlight(self) -> HighlightPosition | None:
+        """Extract reference part from interpolation as a highlight position.
+
+        Returns:
+            HighlightPosition representing the reference part of the interpolation,
+            or None if this is a function call or no reference is found
+        """
+        # Don't highlight references for function calls
+        if ":" in self.content:
+            return None
+
+        # Extract reference between ${...}
+        match = REFERENCE_PATTERN.search(self.content)
+        if not match:
+            return None
+
+        reference = match.group(1).strip()
+        if not reference:
+            return None
+
+        # Reference must be contained in a single line
+        lines = self.content.splitlines()
+        for i, line in enumerate(lines):
+            if reference in line:
+                # Calculate reference position
+                ref_start = line.find(reference)
+                line_offset = self.start_column if i == 0 else 0
+
+                return HighlightPosition(
+                    start_line=self.start_line + i,
+                    start_column=line_offset + ref_start,
+                    end_column=line_offset + ref_start + len(reference),
+                    token_type="reference",
+                    content=reference,
+                )
+
+        return None
+
+    def get_function_highlight(self) -> HighlightPosition | None:
+        """Extract function part from interpolation as a highlight position.
+
+        Returns:
+            HighlightPosition representing the function part of the interpolation,
+            or None if this is not a function call or no function is found
+        """
+        # Check if this is a function call
+        match = FUNCTION_PATTERN.search(self.content)
+        if not match:
+            return None
+
+        function = match.group(1).strip()
+        if not function:
+            return None
+
+        # Function part must be in the first line (from ${ to :)
+        lines = self.content.splitlines()
+        first_line = lines[0]
+
+        # Calculate function position
+        func_start = first_line.find(function)
+        if func_start == -1:
+            return None
+
+        return HighlightPosition(
+            start_line=self.start_line,
+            start_column=self.start_column + func_start,
+            end_column=self.start_column + func_start + len(function),
+            token_type="function",
+            content=function,
+        )
 
 
 @lru_cache

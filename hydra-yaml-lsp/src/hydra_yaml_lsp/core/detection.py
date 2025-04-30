@@ -7,6 +7,10 @@ from typing import Literal
 
 from ruamel import yaml
 
+REFERENCE_PATTERN = re.compile(r"\$\{([^{}]+)\}")
+FUNCTION_PATTERN = re.compile(r"\$\{([^:{}]+):")
+SPECIAL_KEY_PATTERN = re.compile(r"_\w+_")
+
 
 @dataclass(frozen=True)
 class SpecialKeyPosition:
@@ -23,50 +27,6 @@ class SpecialKeyPosition:
     start: int
     end: int
     key: str
-
-
-SPECIAL_KEY_PATTERN = re.compile(r"_\w+_")
-
-
-@lru_cache
-def detect_special_keys_in_document(content: str) -> tuple[SpecialKeyPosition, ...]:
-    """Detect all Hydra special keys in a YAML document.
-
-    Searches through each line of the document and identifies all keys
-    surrounded by underscores (e.g., _target_, _args_) followed by colons.
-
-    Args:
-        content: A string representing the entire YAML document.
-
-    Returns:
-        A list of SpecialKeyPosition objects, each containing information
-        about a special key found in the document.
-
-    Examples:
-        >>> content = "_target_: module.path\\nregular: value\\n  _args_: value"
-        >>> result = detect_special_keys_in_document(content)
-        >>> [(pos.lineno, pos.start, pos.end, pos.key) for pos in result]
-        [(0, 0, 8, '_target_'), (2, 2, 8, '_args_')]
-    """
-    results: list[SpecialKeyPosition] = []
-
-    prev_token_type = None
-    token: yaml.Token
-    for token in yaml.YAML().scan(content):
-        if prev_token_type is yaml.KeyToken and isinstance(token, yaml.ScalarToken):
-            val = str(token.value)
-            if SPECIAL_KEY_PATTERN.match(val):
-                results.append(
-                    SpecialKeyPosition(
-                        token.start_mark.line,
-                        token.start_mark.column,
-                        token.end_mark.column,
-                        val,
-                    )
-                )
-
-        prev_token_type = type(token)
-    return tuple(results)
 
 
 @dataclass(frozen=True)
@@ -95,10 +55,6 @@ class HighlightPosition:
             Same value as start_line since highlights are contained within a single line
         """
         return self.start_line
-
-
-REFERENCE_PATTERN = re.compile(r"\$\{([^{}]+)\}")
-FUNCTION_PATTERN = re.compile(r"\$\{([^:{}]+):")
 
 
 @dataclass(frozen=True)
@@ -207,6 +163,47 @@ class InterpolationPosition:
             token_type="function",
             content=function,
         )
+
+
+@lru_cache
+def detect_special_keys_in_document(content: str) -> tuple[SpecialKeyPosition, ...]:
+    """Detect all Hydra special keys in a YAML document.
+
+    Searches through each line of the document and identifies all keys
+    surrounded by underscores (e.g., _target_, _args_) followed by colons.
+
+    Args:
+        content: A string representing the entire YAML document.
+
+    Returns:
+        A list of SpecialKeyPosition objects, each containing information
+        about a special key found in the document.
+
+    Examples:
+        >>> content = "_target_: module.path\\nregular: value\\n  _args_: value"
+        >>> result = detect_special_keys_in_document(content)
+        >>> [(pos.lineno, pos.start, pos.end, pos.key) for pos in result]
+        [(0, 0, 8, '_target_'), (2, 2, 8, '_args_')]
+    """
+    results: list[SpecialKeyPosition] = []
+
+    prev_token_type = None
+    token: yaml.Token
+    for token in yaml.YAML().scan(content):
+        if prev_token_type is yaml.KeyToken and isinstance(token, yaml.ScalarToken):
+            val = str(token.value)
+            if SPECIAL_KEY_PATTERN.match(val):
+                results.append(
+                    SpecialKeyPosition(
+                        token.start_mark.line,
+                        token.start_mark.column,
+                        token.end_mark.column,
+                        val,
+                    )
+                )
+
+        prev_token_type = type(token)
+    return tuple(results)
 
 
 @lru_cache

@@ -239,6 +239,14 @@ class TestTargetValueHighlights:
         assert class_method_highlights[-1].object_type == "method"
         assert class_method_highlights[-1].content == "class_method"
 
+    def test_other_detection(self):
+        yaml_content = "_target_: tests.target_object.not_found"
+        targets = detect_target_values(yaml_content)
+
+        highlight = targets[0].get_highlights()[-1]
+        assert highlight.content == "not_found"
+        assert highlight.object_type == "other"
+
     def test_position_calculation(self):
         """Test correct position calculation of highlights."""
         yaml_content = "_target_: tests.core"

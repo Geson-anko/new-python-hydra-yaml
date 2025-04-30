@@ -61,6 +61,10 @@ class TestDocumentSpecialKeys:
         result = detect_special_keys_in_document(content)
         assert result == expected
 
+    def test_not_hydra_special_key(self):
+        result = detect_special_keys_in_document("_nothydraspecial_: value")
+        assert len(result) == 0
+
     def test_caching(self):
         """Test that results are cached properly."""
         content = "_target_: module.path\n_args_: value"

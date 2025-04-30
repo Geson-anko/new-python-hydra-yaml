@@ -7,9 +7,10 @@ from typing import Literal
 
 from ruamel import yaml
 
+from hydra_yaml_lsp.constants import HydraSpecialKey
+
 REFERENCE_PATTERN = re.compile(r"\$\{([^{}]+)\}")
 FUNCTION_PATTERN = re.compile(r"\$\{([^:{}]+):")
-SPECIAL_KEY_PATTERN = re.compile(r"_\w+_")
 
 
 @dataclass(frozen=True)
@@ -185,7 +186,7 @@ def detect_special_keys_in_document(content: str) -> tuple[SpecialKeyPosition, .
     for token in yaml.YAML().scan(content):
         if prev_token_type is yaml.KeyToken and isinstance(token, yaml.ScalarToken):
             val = str(token.value)
-            if SPECIAL_KEY_PATTERN.match(val):
+            if val in HydraSpecialKey:
                 results.append(
                     SpecialKeyPosition(
                         token.start_mark.line,

@@ -12,7 +12,8 @@ from hydra_yaml_lsp.constants import HydraSpecialKey
 type ObjectType = Literal[
     "module",
     "class",
-    "function",  # or method
+    "function",
+    "method",
     "variable",
     "constant",
     "other",
@@ -104,8 +105,10 @@ def _get_object_type(path: str) -> ObjectType:
             return "module"
         elif inspect.isclass(object):
             return "class"
-        elif inspect.isfunction(object) or inspect.ismethod(object):
+        elif inspect.isfunction(object):
             return "function"
+        elif inspect.ismethod(object):
+            return "method"
         elif path.rsplit(".", maxsplit=1)[-1].isupper():
             return "constant"
         else:

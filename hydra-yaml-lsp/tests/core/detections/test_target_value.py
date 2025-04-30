@@ -236,7 +236,7 @@ class TestTargetValueHighlights:
 
         # Test class method
         class_method_highlights = targets[1].get_highlights()
-        assert class_method_highlights[-1].object_type == "function"
+        assert class_method_highlights[-1].object_type == "method"
         assert class_method_highlights[-1].content == "class_method"
 
     def test_position_calculation(self):

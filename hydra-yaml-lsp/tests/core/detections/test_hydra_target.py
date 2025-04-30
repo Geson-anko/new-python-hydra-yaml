@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from hydra_yaml_lsp.core.detections.target_value import (
+from hydra_yaml_lsp.core.detections.hydra_target import (
     TargetValuePosition,
     detect_target_values,
 )

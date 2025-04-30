@@ -2,6 +2,7 @@ from textwrap import dedent
 
 from hydra_yaml_lsp.core.detections.hydra_target import (
     TargetValuePosition,
+    detect_target_path,
     detect_target_values,
 )
 
@@ -260,3 +261,129 @@ class TestTargetValueHighlights:
         # Second component accounts for the dot
         assert highlights[1].start == len("_target_: tests.")
         assert highlights[1].end == highlights[1].start + len("core")
+
+
+class TestTargetPathDetection:
+    """Test cases for target path detection in Hydra YAML files."""
+
+    def test_empty_document(self):
+        """Test with an empty document."""
+        result = detect_target_path("")
+        assert result == ()
+
+    def test_document_with_no_targets_or_paths(self):
+        """Test with a document containing no targets or paths."""
+        content = dedent("""
+            regular: value
+            another: item
+            third: element
+        """).strip()
+        result = detect_target_path(content)
+        assert result == ()
+
+    def test_document_with_target_but_no_path(self):
+        """Test with a document containing a target but no path."""
+        content = dedent("""
+            component:
+              _target_: hydra.utils.get_method
+              arg1: value1
+        """).strip()
+        result = detect_target_path(content)
+        assert result == ()
+
+    def test_document_with_path_but_no_target(self):
+        """Test with a document containing a path but no target."""
+        content = dedent("""
+            component:
+              path: module.path.function
+              arg1: value1
+        """).strip()
+        result = detect_target_path(content)
+        assert result == ()
+
+    def test_document_with_non_utility_target_and_path(self):
+        """Test with a document containing a non-utility target and path."""
+        content = dedent("""
+            component:
+              _target_: regular.module.Class
+              path: module.path.function
+        """).strip()
+        result = detect_target_path(content)
+        assert result == ()
+
+    def test_document_with_utility_target_and_path(self):
+        """Test with a document containing a utility target and path."""
+        content = dedent("""
+            component:
+              _target_: hydra.utils.get_method
+              path: tests.target_objects.function
+        """).strip()
+        result = detect_target_path(content)
+
+        assert len(result) == 1
+        assert result[0].content == "tests.target_objects.function"
+
+    def test_document_with_multiple_utility_blocks(self):
+        """Test with a document containing multiple utility blocks."""
+        content = dedent("""
+            component1:
+              _target_: hydra.utils.get_method
+              path: module1.path.function
+
+            component2:
+              _target_: regular.module.Class
+              path: module2.path.function
+
+            component3:
+              _target_: hydra.utils.get_class
+              path: module3.path.Class
+        """).strip()
+        result = detect_target_path(content)
+
+        assert len(result) == 2
+        assert result[0].content == "module1.path.function"
+        assert result[1].content == "module3.path.Class"
+
+    def test_document_with_nested_blcoks(self):
+        content = dedent("""
+            component1:
+              _target_: hydra.utils.get_method
+              path: module1.path.function
+
+              component2:
+                _target_: regular.module.Class
+                path: module2.path.function
+
+              component3:
+                _target_: hydra.utils.get_class
+                path: module3.path.Class
+        """).strip()
+
+        result = detect_target_path(content)
+        assert len(result) == 2
+
+        assert result[0].content in ["module3.path.Class", "module1.path.function"]
+        assert result[1].content in ["module3.path.Class", "module1.path.function"]
+
+    def test_caching(self):
+        """Test that results are cached properly."""
+        content = dedent("""
+            component:
+              _target_: hydra.utils.get_method
+              path: module.path.function
+        """).strip()
+
+        # First call should compute the result
+        result1 = detect_target_path(content)
+
+        # Second call should use the cached result
+        result2 = detect_target_path(content)
+
+        # Results should be identical
+        assert result1 == result2
+        assert len(result1) == 1
+        assert result1[0].content == "module.path.function"
+
+        # Check cache info
+        info = detect_target_path.cache_info()
+        assert info.hits >= 1

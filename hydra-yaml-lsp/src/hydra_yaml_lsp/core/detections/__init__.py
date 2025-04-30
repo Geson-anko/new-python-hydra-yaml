@@ -1,6 +1,7 @@
 from .hydra_target import (
     TargetValueHighlight,
     TargetValuePosition,
+    detect_target_path,
     detect_target_values,
 )
 from .interpolation import (
@@ -19,4 +20,5 @@ __all__ = [
     "TargetValueHighlight",
     "TargetValuePosition",
     "detect_target_values",
+    "detect_target_path",
 ]

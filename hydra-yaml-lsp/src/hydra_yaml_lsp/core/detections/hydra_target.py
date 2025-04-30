@@ -1,12 +1,12 @@
 import inspect
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, TypedDict
 
 import hydra.utils
 from ruamel import yaml
 
-from hydra_yaml_lsp.constants import HydraSpecialKey
+from hydra_yaml_lsp.constants import HydraSpecialKey, HydraUtilityFunctions
 
 # Type for Python object classification
 type ObjectType = Literal[
@@ -156,4 +156,82 @@ def detect_target_values(content: str) -> tuple[TargetValuePosition, ...]:
                     content=value_token.value,
                 )
             )
+    return tuple(results)
+
+
+@lru_cache
+def detect_target_path(content: str) -> tuple[TargetValuePosition, ...]:
+    """Detect 'path' values associated with Hydra utility functions in a YAML
+    document.
+
+    When Hydra utility functions (e.g., hydra.utils.get_method) are specified in a
+    _target_ field, they require a corresponding 'path' field in the same block that
+    contains an import path. This function detects these path values.
+
+    Args:
+        content: A string representing the entire YAML document.
+
+    Returns:
+        A tuple of TargetValuePosition objects, each containing information
+        about a path value associated with a Hydra utility function.
+
+    Examples:
+        >>> content = '''
+        ... utility:
+        ...   _target_: hydra.utils.get_method
+        ...   path: module.path.function
+        ... '''
+        >>> result = detect_target_path(content)
+        >>> len(result)
+        1
+        >>> result[0].content
+        'module.path.function'
+    """
+    results: list[TargetValuePosition] = []
+    stream = yaml.YAML().scan(content)
+
+    class TargetPathInfo(TypedDict, total=False):
+        target_exists: bool
+        path_value_pos: TargetValuePosition
+
+    target_path_info_stack: list[TargetPathInfo] = []
+    block_map_started_stack: list[bool] = []
+
+    while (token := next(stream, None)) is not None:
+        if isinstance(token, yaml.BlockMappingStartToken):
+            block_map_started_stack.append(True)
+            target_path_info_stack.append({})
+
+        if isinstance(token, yaml.BlockSequenceStartToken):
+            block_map_started_stack.append(False)
+
+        if isinstance(token, yaml.BlockEndToken) and block_map_started_stack.pop():
+            target_path_info = target_path_info_stack.pop()
+            path_value_pos = target_path_info.get("path_value_pos")
+            if path_value_pos and target_path_info.get("target_exists"):
+                results.append(path_value_pos)
+
+        if isinstance(token, yaml.KeyToken):
+            token = next(stream)
+            if not isinstance(token, yaml.ScalarToken):
+                continue
+            match token.value:
+                case HydraSpecialKey.TARGET:
+                    if not isinstance((token := next(stream)), yaml.ValueToken):
+                        continue
+                    if not isinstance((token := next(stream)), yaml.ScalarToken):
+                        continue
+                    if HydraUtilityFunctions.is_hydra_utility_function(token.value):
+                        target_path_info_stack[-1]["target_exists"] = True
+                case "path":
+                    if not isinstance((token := next(stream)), yaml.ValueToken):
+                        continue
+                    if not isinstance((token := next(stream)), yaml.ScalarToken):
+                        continue
+                    target_path_info_stack[-1]["path_value_pos"] = TargetValuePosition(
+                        lineno=token.start_mark.line,
+                        start=token.start_mark.column,
+                        end=token.end_mark.column,
+                        content=token.value,
+                    )
     return tuple(results)

@@ -20,20 +20,26 @@ class PackageName:
     end: int
 
 
+@dataclass
+class PackageDirective:
+    start: int
+    end: int
+    content = AT_PACKAGE
+
+
 @dataclass(frozen=True)
 class HydraPackagePosition:
     """Complete position information for a Hydra package declaration.
 
     Attributes:
-        package_name: Object containing the package name content and position.
+        name: Object containing the package name content and position.
         at_package_start: Starting position of the '@package' keyword.
         at_package_end: Ending position of the '@package' keyword.
         content: Complete text content of the package declaration line.
     """
 
-    package_name: PackageName
-    at_package_start: int
-    at_package_end: int
+    name: PackageName
+    directive: PackageDirective
     content: str
 
 
@@ -74,7 +80,6 @@ def detect_hydra_package(content: str) -> HydraPackagePosition | None:
 
     return HydraPackagePosition(
         PackageName(package_name, package_name_start, package_name_end),
-        at_package_start,
-        at_package_end,
+        PackageDirective(at_package_start, at_package_end),
         line,
     )

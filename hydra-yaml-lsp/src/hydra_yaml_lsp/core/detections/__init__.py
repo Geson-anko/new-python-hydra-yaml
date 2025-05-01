@@ -1,4 +1,9 @@
-from .hydra_package import HydraPackagePosition, detect_hydra_package
+from .hydra_package import (
+    HydraPackagePosition,
+    PackageDirective,
+    PackageName,
+    detect_hydra_package,
+)
 from .hydra_target import (
     TargetValueHighlight,
     TargetValuePosition,
@@ -23,5 +28,7 @@ __all__ = [
     "detect_target_values",
     "detect_target_path",
     "HydraPackagePosition",
+    "PackageName",
+    "PackageDirective",
     "detect_hydra_package",
 ]

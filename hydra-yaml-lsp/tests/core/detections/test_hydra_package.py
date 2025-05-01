@@ -24,11 +24,11 @@ class TestHydraPackageDetection:
         result = detect_hydra_package(content)
 
         assert result is not None
-        assert result.package_name.content == "foo"
-        assert result.package_name.start == content.find("foo")
-        assert result.package_name.end == content.find("foo") + len("foo")
-        assert result.at_package_start == content.find(AT_PACKAGE)
-        assert result.at_package_end == content.find(AT_PACKAGE) + len(AT_PACKAGE)
+        assert result.name.content == "foo"
+        assert result.name.start == content.find("foo")
+        assert result.name.end == content.find("foo") + len("foo")
+        assert result.directive.start == content.find(AT_PACKAGE)
+        assert result.directive.end == content.find(AT_PACKAGE) + len(AT_PACKAGE)
         assert result.content == "# @package foo"
 
     def test_hierarchical_package_declaration(self):
@@ -37,11 +37,9 @@ class TestHydraPackageDetection:
         result = detect_hydra_package(content)
 
         assert result is not None
-        assert result.package_name.content == "foo.bar.baz"
-        assert result.package_name.start == content.find("foo.bar.baz")
-        assert result.package_name.end == content.find("foo.bar.baz") + len(
-            "foo.bar.baz"
-        )
+        assert result.name.content == "foo.bar.baz"
+        assert result.name.start == content.find("foo.bar.baz")
+        assert result.name.end == content.find("foo.bar.baz") + len("foo.bar.baz")
 
     def test_package_with_extra_whitespace(self):
         """Test with package declaration containing extra whitespace."""
@@ -49,14 +47,14 @@ class TestHydraPackageDetection:
         result = detect_hydra_package(content)
 
         assert result is not None
-        assert result.package_name.content == "foo"
+        assert result.name.content == "foo"
 
     def test_package_with_trailing_comment(self):
         """Test with package declaration containing trailing comment."""
         content = "# @package foo # another comment\nkey: value"
         result = detect_hydra_package(content)
         assert result is not None
-        assert result.package_name.content == "foo"
+        assert result.name.content == "foo"
 
     def test_incorrect_format(self):
         """Test with incorrectly formatted package declarations."""

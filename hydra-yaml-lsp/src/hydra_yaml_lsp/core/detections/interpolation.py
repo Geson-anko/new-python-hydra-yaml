@@ -24,7 +24,7 @@ class InterpolationHighlight:
     start_line: int
     start_column: int
     end_column: int
-    token_type: Literal["reference", "function"]
+    token_type: Literal["reference", "function", "bracket_open", "bracket_close"]
     content: str
 
 
@@ -46,23 +46,47 @@ class InterpolationPosition:
     end_column: int
     content: str
 
-    def get_highlight(self) -> InterpolationHighlight | None:
-        """Get the appropriate highlight position from this interpolation.
+    def get_highlights(self) -> list[InterpolationHighlight]:
+        """Get all highlightable elements from this interpolation.
 
-        This method tries to find a suitable highlighting position by first
-        checking for a reference pattern, then for a function pattern. It provides
-        a single entry point for extracting highlightable elements from interpolations.
+        This method extracts multiple highlight positions from an interpolation:
+        1. Opening brackets "${" at the start of the interpolation
+        2. Reference or function name within the interpolation
+        3. Closing bracket "}" at the end of the interpolation
 
         Returns:
-            HighlightPosition representing either a reference or function part
-            of the interpolation, or None if neither is found
+            A list of InterpolationHighlight objects representing all
+            highlightable elements in the interpolation.
         """
+        result = []
+        # Append `${` highlight.
+        result.append(
+            InterpolationHighlight(
+                start_line=self.start_line,
+                start_column=self.start_column,
+                end_column=self.start_column + 2,
+                content="${",
+                token_type="bracket_open",
+            )
+        )
+
         pos = self.get_reference_highlight()
         if pos:
-            return pos
+            result.append(pos)
         pos = self.get_function_highlight()
         if pos:
-            return pos
+            result.append(pos)
+
+        result.append(
+            InterpolationHighlight(
+                start_line=self.end_line,
+                start_column=self.end_column - 1,
+                end_column=self.end_column,
+                content="}",
+                token_type="bracket_close",
+            )
+        )
+        return result
 
     def get_reference_highlight(self) -> InterpolationHighlight | None:
         """Extract reference part from interpolation as a highlight position.

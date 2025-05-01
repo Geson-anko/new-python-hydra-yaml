@@ -114,36 +114,6 @@ class TestInterpolationHighlightExtraction:
         assert highlight.start_column == 14  # Position after "${  "
         assert highlight.token_type == "function"
 
-    def test_get_highlight_reference(self):
-        """Test get_highlight for reference interpolation."""
-        interp = InterpolationPosition(
-            start_line=5,
-            start_column=10,
-            end_line=5,
-            end_column=30,
-            content="${reference.path}",
-        )
-
-        highlight = interp.get_highlight()
-        assert highlight is not None
-        assert highlight.token_type == "reference"
-        assert highlight.content == "reference.path"
-
-    def test_get_highlight_function(self):
-        """Test get_highlight for function interpolation."""
-        interp = InterpolationPosition(
-            start_line=5,
-            start_column=10,
-            end_line=5,
-            end_column=40,
-            content="${function:arg1,arg2}",
-        )
-
-        highlight = interp.get_highlight()
-        assert highlight is not None
-        assert highlight.token_type == "function"
-        assert highlight.content == "function"
-
     def test_multiline_reference(self):
         """Test reference highlight extraction from multi-line
         interpolation."""
@@ -201,43 +171,86 @@ class TestInterpolationHighlightExtraction:
         assert highlight.token_type == "function"
         assert highlight.content == "function"
 
-    def test_malformed_interpolation(self):
-        """Test with malformed interpolation content."""
+    def test_get_highlights_reference(self):
+        """Test get_highlights for reference interpolation."""
         interp = InterpolationPosition(
             start_line=5,
             start_column=10,
             end_line=5,
-            end_column=15,
-            content="${}",  # Empty interpolation
+            end_column=30,
+            content="${reference.path}",
         )
 
-        assert interp.get_reference_highlight() is None
-        assert interp.get_function_highlight() is None
-        assert interp.get_highlight() is None
+        highlights = interp.get_highlights()
+        assert len(highlights) == 3
 
-    def test_empty_reference(self):
-        """Test with empty reference."""
+        # Check opening bracket
+        assert highlights[0].token_type == "bracket_open"
+        assert highlights[0].content == "${"
+        assert highlights[0].start_line == 5
+        assert highlights[0].start_column == 10
+        assert highlights[0].end_column == 12
+
+        # Check reference
+        assert highlights[1].token_type == "reference"
+        assert highlights[1].content == "reference.path"
+
+        # Check closing bracket
+        assert highlights[2].token_type == "bracket_close"
+        assert highlights[2].content == "}"
+        assert highlights[2].start_line == 5
+        assert highlights[2].start_column == 29
+        assert highlights[2].end_column == 30
+
+    def test_get_highlights_function(self):
+        """Test get_highlights for function interpolation."""
         interp = InterpolationPosition(
             start_line=5,
             start_column=10,
             end_line=5,
-            end_column=17,
-            content="${  }",  # Reference with spaces only
+            end_column=40,
+            content="${function:arg1,arg2}",
         )
 
-        assert interp.get_reference_highlight() is None
+        highlights = interp.get_highlights()
+        assert len(highlights) == 3
 
-    def test_empty_function(self):
-        """Test with empty function."""
+        # Check opening bracket
+        assert highlights[0].token_type == "bracket_open"
+
+        # Check function
+        assert highlights[1].token_type == "function"
+        assert highlights[1].content == "function"
+
+        # Check closing bracket
+        assert highlights[2].token_type == "bracket_close"
+        assert highlights[2].content == "}"
+
+    def test_get_highlights_multiline(self):
+        """Test get_highlights for multiline interpolation."""
         interp = InterpolationPosition(
             start_line=5,
             start_column=10,
-            end_line=5,
-            end_column=17,
-            content="${  :}",  # Function with empty name
+            end_line=7,
+            end_column=5,
+            content="${\nreference.path\n}",
         )
 
-        assert interp.get_function_highlight() is None
+        highlights = interp.get_highlights()
+        assert len(highlights) == 3
+
+        # Check opening bracket
+        assert highlights[0].start_line == 5
+        assert highlights[0].start_column == 10
+
+        # Check reference
+        assert highlights[1].token_type == "reference"
+        assert highlights[1].start_line == 6
+
+        # Check closing bracket
+        assert highlights[2].token_type == "bracket_close"
+        assert highlights[2].start_line == 7
+        assert highlights[2].end_column == 5
 
 
 class TestInterpolationDetection:

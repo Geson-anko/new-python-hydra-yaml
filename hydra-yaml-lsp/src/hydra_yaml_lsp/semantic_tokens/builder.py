@@ -9,33 +9,41 @@ from hydra_yaml_lsp.core.detections import (
     InterpolationHighlight,
     SpecialKeyPosition,
     TargetValueHighlight,
-    TargetValuePosition,
 )
+
+
+def to_camel_case(name: str) -> str:
+    """Convert `UPPER_SNAKE_CASE` to `lowerCamelCase`.
+
+    Args:
+        name: Enum member name in upper-snake (e.g. ``"SPECIAL_KEY"``).
+
+    Returns:
+        Converted lower-camel string (e.g. ``"specialKey"``).
+    """
+    parts: list[str] = name.lower().split("_")
+    if not parts:
+        return ""
+    return parts[0] + "".join(word.capitalize() for word in parts[1:])
 
 
 class TokenType(IntEnum):
     """Definition of semantic token types."""
 
-    SPECIAL_KEY = 0
-    TARGET_VALUE = 1
-    INTERPOLATION_REF = 2
-    INTERPOLATION_FUNC = 3
-    INTERPOLATION_BRACKET = 4
-    PACKAGE_DIRECTIVE = 5
-    PACKAGE_NAME = 6
+    SPECIAL_KEY = 0  # Hydra special keys (_target_, _args_, etc.)
+    TARGET_VALUE = 1  # Values of _target_ fields
+    INTERPOLATION_REF = (
+        2  # Interpolation references (reference parts in ${path.to.value})
+    )
+    INTERPOLATION_FUNC = 3  # Interpolation functions (function name in ${func:args})
+    INTERPOLATION_BRACKET = 4  # Interpolation brackets
+    PACKAGE_DIRECTIVE = 5  # @package directive
+    PACKAGE_NAME = 6  # Package name
 
     @classmethod
     def get_legend(cls) -> list[str]:
         """Return the legend for token types."""
-        return [
-            "specialKey",  # Hydra special keys (_target_, _args_, etc.)
-            "targetValue",  # Values of _target_ fields
-            "interpolationRef",  # Interpolation references (reference parts in ${path.to.value})
-            "interpolationFunc",  # Interpolation functions (function name in ${func:args})
-            "interpolationBracket",  # Interpolation brackets
-            "packageDirective",  # @package directive
-            "packageName",  # Package name
-        ]
+        return [to_camel_case(e.name) for e in cls]
 
 
 class TokenModifier(IntFlag):
@@ -53,15 +61,7 @@ class TokenModifier(IntFlag):
     @classmethod
     def get_legend(cls) -> list[str]:
         """Return the legend for token modifiers."""
-        return [
-            "declaration",  # Declaration
-            "reference",  # Reference
-            "function",  # Function
-            "module",  # Module
-            "class",  # Class
-            "variable",  # Variable
-            "constant",  # Constant
-        ]
+        return [to_camel_case(e.name) for e in cls if e.name is not None]
 
 
 @dataclass(frozen=True)
@@ -100,17 +100,6 @@ class SemanticToken:
         )
 
     @classmethod
-    def from_target_value(cls, target: TargetValuePosition) -> Self:
-        """Create a semantic token from a target value."""
-        return cls(
-            line=target.lineno,
-            start=target.start,
-            length=target.end - target.start,
-            token_type=TokenType.TARGET_VALUE,
-            token_modifiers=TokenModifier.REFERENCE,
-        )
-
-    @classmethod
     def from_target_highlight(cls, highlight: TargetValueHighlight) -> Self:
         """Create a semantic token from a target highlight."""
         # Determine modifiers based on object type
@@ -130,7 +119,7 @@ class SemanticToken:
         return cls(
             line=highlight.lineno,
             start=highlight.start,
-            length=highlight.end - highlight.start,
+            length=len(highlight.content),
             token_type=TokenType.TARGET_VALUE,
             token_modifiers=modifiers,
         )
@@ -152,7 +141,7 @@ class SemanticToken:
         return cls(
             line=highlight.start_line,
             start=highlight.start_column,
-            length=highlight.end_column - highlight.start_column,
+            length=len(highlight.content),
             token_type=token_type,
             token_modifiers=modifiers,
         )

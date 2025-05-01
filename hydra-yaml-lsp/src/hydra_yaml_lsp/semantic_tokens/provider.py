@@ -59,8 +59,6 @@ def get_tokens_data_for_document(document: Document) -> list[int]:
 
     # Add target values
     for target in detect_target_values(text):
-        builder.add_tokens(SemanticToken.from_target_value(target))
-
         # Add tokens from highlight information
         for highlight in target.get_highlights():
             builder.add_tokens(SemanticToken.from_target_highlight(highlight))

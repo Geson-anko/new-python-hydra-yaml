@@ -29,6 +29,7 @@ def register(server: LanguageServer) -> None:
                 token_types=TokenType.get_legend(),
                 token_modifiers=TokenModifier.get_legend(),
             ),
+            range=False,
             full=True,
         ),
     )

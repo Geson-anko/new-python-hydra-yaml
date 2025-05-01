@@ -4,6 +4,8 @@ import logging
 
 from pygls.server import LanguageServer
 
+from .semantic_tokens import register as register_semantic_tokens
+
 logger = logging.getLogger("hydra-yaml-lsp")
 
 
@@ -29,4 +31,5 @@ def start_server() -> None:
         handlers=[logging.StreamHandler()],
     )
     server = HydraYamlLanguageServer()
+    register_semantic_tokens(server)
     server.start_io()

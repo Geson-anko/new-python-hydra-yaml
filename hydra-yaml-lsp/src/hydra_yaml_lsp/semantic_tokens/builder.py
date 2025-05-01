@@ -84,8 +84,6 @@ class SemanticToken:
 
     def __lt__(self, other: Self) -> bool:
         """Compare tokens by line and column."""
-        if not isinstance(other, SemanticToken):
-            return NotImplemented
         return (self.line, self.start) < (other.line, other.start)
 
     @classmethod

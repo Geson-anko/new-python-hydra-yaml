@@ -57,6 +57,7 @@ class TokenModifier(IntFlag):
     CLASS = 1 << 4
     VARIABLE = 1 << 5
     CONSTANT = 1 << 6
+    BRACKET = 1 << 7
 
     @classmethod
     def get_legend(cls) -> list[str]:
@@ -128,9 +129,6 @@ class SemanticToken:
     @classmethod
     def from_interpolation_highlight(cls, highlight: InterpolationHighlight) -> Self:
         """Create a semantic token from an interpolation highlight."""
-        token_type = TokenType.INTERPOLATION_BRACKET
-        modifiers = TokenModifier.NONE
-
         match highlight.token_type:
             case "reference":
                 token_type = TokenType.INTERPOLATION_REF
@@ -138,6 +136,9 @@ class SemanticToken:
             case "function":
                 token_type = TokenType.INTERPOLATION_FUNC
                 modifiers = TokenModifier.FUNCTION
+            case "bracket_close" | "bracket_open":
+                token_type = TokenType.INTERPOLATION_BRACKET
+                modifiers = TokenModifier.BRACKET
 
         return cls(
             line=highlight.start_line,

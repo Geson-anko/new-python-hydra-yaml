@@ -191,7 +191,7 @@ class TestSemanticToken:
         )
         token = SemanticToken.from_interpolation_highlight(bracket_highlight)
         assert token.token_type == TokenType.INTERPOLATION_BRACKET
-        assert token.token_modifiers == TokenModifier.NONE
+        assert token.token_modifiers == TokenModifier.BRACKET
 
     def test_from_package_directive(self):
         """Test creating tokens from HydraPackagePosition."""

@@ -234,4 +234,6 @@ def detect_target_path(content: str) -> tuple[TargetValuePosition, ...]:
                         end=token.end_mark.column,
                         content=token.value,
                     )
+                case _:
+                    pass
     return tuple(results)

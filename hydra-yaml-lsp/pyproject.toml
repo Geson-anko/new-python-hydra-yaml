@@ -17,6 +17,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.2.0",
     "pyright>=1.1.398",
     "pytest>=8.3.5",
     "pytest-mock>=3.14.0",
@@ -52,6 +53,7 @@ exclude = [
 reportMissingTypeStubs = false
 reportImplicitOverride = true
 reportPrivateUsage = "warning"
+reportMatchNotExhaustive = true
 
 [tool.ruff]
 

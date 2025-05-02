@@ -8,6 +8,7 @@ from hydra_yaml_lsp.core.detections import (
     detect_hydra_package,
     detect_interpolation_positions,
     detect_special_keys,
+    detect_target_path,
     detect_target_values,
 )
 
@@ -57,6 +58,11 @@ def get_tokens_data_for_document(document: Document) -> list[int]:
     # Add target values
     for target in detect_target_values(text):
         # Add tokens from highlight information
+        for highlight in target.get_highlights():
+            builder.add_tokens(SemanticToken.from_target_highlight(highlight))
+
+    # Add target path value
+    for target in detect_target_path(text):
         for highlight in target.get_highlights():
             builder.add_tokens(SemanticToken.from_target_highlight(highlight))
 

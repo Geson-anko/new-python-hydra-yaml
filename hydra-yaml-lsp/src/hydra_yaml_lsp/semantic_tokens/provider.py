@@ -24,13 +24,9 @@ def register(server: LanguageServer) -> None:
 
     @server.feature(
         lsp.TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL,
-        lsp.SemanticTokensOptions(
-            legend=lsp.SemanticTokensLegend(
-                token_types=TokenType.get_legend(),
-                token_modifiers=TokenModifier.get_legend(),
-            ),
-            range=False,
-            full=True,
+        lsp.SemanticTokensLegend(
+            token_types=TokenType.get_legend(),
+            token_modifiers=TokenModifier.get_legend(),
         ),
     )
     def semantic_tokens_full(params: lsp.SemanticTokensParams) -> lsp.SemanticTokens:

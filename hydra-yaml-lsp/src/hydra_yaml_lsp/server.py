@@ -32,4 +32,5 @@ def start_server() -> None:
     )
     server = HydraYamlLanguageServer()
     register_semantic_tokens(server)
+
     server.start_io()

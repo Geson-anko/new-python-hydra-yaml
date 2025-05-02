@@ -1,3 +1,5 @@
+# @package _global_
+
 # Normal Test Cases
 sample_project:
   _target_: sample_python_project.YourClass
@@ -22,3 +24,5 @@ nested:
   deep:
     value3: ${..value1}
     value4: ${.value3}
+
+python_eval: ${python.eval:${value},${value2}}

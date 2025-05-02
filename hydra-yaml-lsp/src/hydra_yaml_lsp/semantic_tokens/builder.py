@@ -101,7 +101,6 @@ class SemanticToken:
     def from_target_highlight(cls, highlight: TargetValueHighlight) -> Self:
         """Create a semantic token from a target highlight."""
         # Determine modifiers based on object type
-        modifiers = TokenModifier.NONE
         match highlight.object_type:
             case "module":
                 modifiers = TokenModifier.MODULE
@@ -109,10 +108,14 @@ class SemanticToken:
                 modifiers = TokenModifier.CLASS
             case "function":
                 modifiers = TokenModifier.FUNCTION
+            case "method":
+                modifiers = TokenModifier.FUNCTION
             case "variable":
                 modifiers = TokenModifier.VARIABLE
             case "constant":
                 modifiers = TokenModifier.CONSTANT
+            case "other":
+                modifiers = TokenModifier.NONE
 
         return cls(
             line=highlight.lineno,

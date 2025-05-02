@@ -3,7 +3,7 @@
   "displayName": "python-hydra-yaml",
   "description": "",
   "version": "0.0.1",
-  "license":"MIT",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.99.0"
   },
@@ -14,7 +14,7 @@
     "onLanguage:yaml"
   ],
   "main": "./out/extension.js",
-"contributes": {
+  "contributes": {
     "commands": [
       {
         "command": "python-hydra-yaml.restart",
@@ -31,7 +31,117 @@
           "description": "Fallback Python executable path (used if VS Code Python extension is not available)"
         }
       }
-    }
+    },
+    "semanticTokenColors": {
+      "specialKey": "#BD10E0",
+      "interpolationBracket": "#FF8C00"
+    },
+    "semanticTokenTypes": [
+      {
+        "id": "specialKey",
+        "description": "Hydra special keys (_target_, _args_, etc.)"
+      },
+      {
+        "id": "targetValue",
+        "description": "Values of _target_ fields"
+      },
+      {
+        "id": "interpolationRef",
+        "description": "Interpolation references"
+      },
+      {
+        "id": "interpolationFunc",
+        "description": "Interpolation functions"
+      },
+      {
+        "id": "interpolationBracket",
+        "description": "Interpolation brackets"
+      },
+      {
+        "id": "packageDirective",
+        "description": "@package directive"
+      },
+      {
+        "id": "packageName",
+        "description": "Package name"
+      }
+    ],
+    "semanticTokenModifiers": [
+      {
+        "id": "declaration",
+        "description": "Declaration of an entity"
+      },
+      {
+        "id": "reference",
+        "description": "Reference to an entity"
+      },
+      {
+        "id": "function",
+        "description": "Function entities"
+      },
+      {
+        "id": "module",
+        "description": "Module entities"
+      },
+      {
+        "id": "class",
+        "description": "Class entities"
+      },
+      {
+        "id": "variable",
+        "description": "Variable entities"
+      },
+      {
+        "id": "constant",
+        "description": "Constant entities"
+      },
+      {
+        "id": "none",
+        "description": "not recognized tokens"
+      }
+    ],
+    "semanticTokenScopes": [
+      {
+        "scopes": {
+          "specialKey": [
+            "keyword"
+          ],
+          "targetValue": [
+            "entity.name.class"
+          ],
+          "targetValue.module": [
+            "entity.name.namespace"
+          ],
+          "targetValue.class": [
+            "entity.name.class"
+          ],
+          "targetValue.function": [
+            "entity.name.function"
+          ],
+          "targetValue.variable": [
+            "variable"
+          ],
+          "targetValue.constant": [
+            "constant"
+          ],
+          "interpolationRef": [
+            "variable.reference"
+          ],
+          "interpolationFunc": [
+            "entity.name.function"
+          ],
+          "interpolationBracket": [
+            "punctuation.definition.template"
+          ],
+          "packageDirective": [
+            "keyword.control.directive"
+          ],
+          "packageName": [
+            "entity.name.namespace"
+          ]
+        }
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",

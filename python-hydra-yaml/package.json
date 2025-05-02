@@ -32,10 +32,6 @@
         }
       }
     },
-    "semanticTokenColors": {
-      "specialKey": "#BD10E0",
-      "interpolationBracket": "#FF8C00"
-    },
     "semanticTokenTypes": [
       {
         "id": "specialKey",
@@ -110,9 +106,6 @@
           "specialKey": [
             "keyword"
           ],
-          "targetValue": [
-            "entity.name.class"
-          ],
           "targetValue.module": [
             "entity.name.namespace"
           ],
@@ -127,6 +120,9 @@
           ],
           "targetValue.constant": [
             "constant"
+          ],
+          "targetValue.other": [
+            "other"
           ],
           "interpolationRef": [
             "variable.reference"

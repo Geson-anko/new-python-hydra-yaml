@@ -96,6 +96,10 @@
         "description": "Constant entities"
       },
       {
+        "id": "bracket",
+        "description": "Brackets open and close."
+      },
+      {
         "id": "none",
         "description": "not recognized tokens"
       }

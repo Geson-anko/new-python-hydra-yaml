@@ -17,4 +17,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-hydra-yaml-lsp = { path = "../hydra-yaml-lsp" }
+hydra-yaml-lsp = { path = "../hydra-yaml-lsp", editable = true }

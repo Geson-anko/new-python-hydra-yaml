@@ -1,5 +1,7 @@
 """Hydra YAML semantic token provider implementation."""
 
+import logging
+
 from lsprotocol import types as lsp
 from pygls.server import LanguageServer
 from pygls.workspace import Document
@@ -19,6 +21,8 @@ from .builder import (
     TokenType,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def register(server: LanguageServer) -> None:
     """Register semantic token functionality to the server."""
@@ -34,7 +38,6 @@ def register(server: LanguageServer) -> None:
         """Provide semantic tokens for YAML documents."""
         document_uri = params.text_document.uri
         document = server.workspace.get_document(document_uri)
-
         data = get_tokens_data_for_document(document)
         return lsp.SemanticTokens(data=data)
 
@@ -52,29 +55,46 @@ def get_tokens_data_for_document(document: Document) -> list[int]:
     builder = SemanticTokensBuilder()
 
     # Add special keys
-    for key in detect_special_keys(text):
-        builder.add_tokens(SemanticToken.from_special_key(key))
+    try:
+        for key in detect_special_keys(text):
+            builder.add_tokens(SemanticToken.from_special_key(key))
+    except Exception as e:
+        logger.error(f"Error has occurred in special key detection:\n{e}")
 
-    # Add target values
-    for target in detect_target_values(text):
-        # Add tokens from highlight information
-        for highlight in target.get_highlights():
-            builder.add_tokens(SemanticToken.from_target_highlight(highlight))
+    try:
+        # Add target values
+        for target in detect_target_values(text):
+            # Add tokens from highlight information
+            for highlight in target.get_highlights():
+                builder.add_tokens(SemanticToken.from_target_highlight(highlight))
+    except Exception as e:
+        logger.error(f"Error has occurred in target values detection:\n{e}")
 
-    # Add target path value
-    for target in detect_target_path(text):
-        for highlight in target.get_highlights():
-            builder.add_tokens(SemanticToken.from_target_highlight(highlight))
+    try:
+        # Add target path value
+        for target in detect_target_path(text):
+            for highlight in target.get_highlights():
+                builder.add_tokens(SemanticToken.from_target_highlight(highlight))
+    except Exception as e:
+        logger.error(f"Error has occurred in target path detection:\n{e}")
 
-    # Add interpolations
-    for interp in detect_interpolation_positions(text):
-        for highlight in interp.get_highlights():
-            builder.add_tokens(SemanticToken.from_interpolation_highlight(highlight))
+    try:
+        # Add interpolations
+        for interp in detect_interpolation_positions(text):
+            for highlight in interp.get_highlights():
+                builder.add_tokens(
+                    SemanticToken.from_interpolation_highlight(highlight)
+                )
+    except Exception as e:
+        logger.error(f"Error has occurred in interpolation detection:\n{e}")
 
-    # Add package declaration
-    package_info = detect_hydra_package(text)
-    if package_info:
-        builder.add_tokens(*SemanticToken.from_package_directive(package_info))
+    try:
+        # Add package declaration
+        package_info = detect_hydra_package(text)
+        if package_info:
+            builder.add_tokens(*SemanticToken.from_package_directive(package_info))
+    except Exception as e:
+        logger.error(f"Error has occurred in hydra package detection:\n{e}")
 
     # Build and get data
     return builder.build()

@@ -18,6 +18,9 @@ def is_typing_key(document: Document, position: lsp.Position) -> bool:
     Returns:
         True if the user appears to be typing a key, False otherwise
     """
+    if len(document.lines) >= position.line:  # End of file.
+        return True
+
     line = document.lines[position.line]
     line_prefix = line[: position.character]
 
@@ -102,7 +105,8 @@ def get_hydra_special_key_completions(
                 value=f"**{key}**\n\n{key.info['documentation']}",
             ),
             insert_text=f"{key}: ",
-            insert_text_format=lsp.InsertTextFormat.PlainText,
+            insert_text_format=lsp.InsertTextFormat.Snippet,
+            insert_text_mode=lsp.InsertTextMode.AdjustIndentation,
         )
         items.append(item)
     return items

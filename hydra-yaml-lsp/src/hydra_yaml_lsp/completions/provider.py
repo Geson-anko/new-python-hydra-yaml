@@ -6,6 +6,7 @@ from lsprotocol import types as lsp
 from pygls.server import LanguageServer
 
 from .special_key import get_hydra_special_key_completions
+from .special_key_value import get_hydra_special_key_value_completions
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def register(server: LanguageServer) -> None:
         lsp.TEXT_DOCUMENT_COMPLETION,
         lsp.CompletionOptions(trigger_characters=[" "]),
     )
-    def special_key_completions(params: lsp.CompletionParams) -> lsp.CompletionList:
+    def completions(params: lsp.CompletionParams) -> lsp.CompletionList:
         document_uri = params.text_document.uri
         position = params.position
 
@@ -34,6 +35,8 @@ def register(server: LanguageServer) -> None:
         try:
             # Add Hydra special key completions (_target_, _args_, etc.)
             items.extend(get_hydra_special_key_completions(document, position))
+            # Add Hydra special key value completions
+            items.extend(get_hydra_special_key_value_completions(document, position))
         except Exception as e:
             logger.error(f"Error providing completions: {e}")
 

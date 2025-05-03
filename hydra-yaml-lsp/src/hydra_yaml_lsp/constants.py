@@ -67,3 +67,31 @@ class HydraUtilityFunctions(StrEnum):
     @classmethod
     def is_hydra_utility_function(cls, path: str) -> bool:
         return path.rsplit(".", 1)[-1] in cls
+
+
+class ConvertValueInfo(TypedDict):
+    detail: str
+
+
+class HydraConvertValue(StrEnum):
+    NONE = "none"
+    PARTIAL = "partial"
+    OBJECT = "object"
+    ALL = "all"
+
+    @property
+    def info(self) -> ConvertValueInfo:
+        """Get detailed information about the _convert_ value."""
+        match self:
+            case HydraConvertValue.NONE:
+                return {"detail": "Default behavior, Use OmegaConf containers"}
+            case HydraConvertValue.PARTIAL:
+                return {
+                    "detail": "Convert OmegaConf containers to dict and list, except Structured Configs, which remain as DictConfig instances."
+                }
+            case HydraConvertValue.OBJECT:
+                return {
+                    "detail": "Convert OmegaConf containers to dict and list, except Structured Configs, which are converted to instances of the backing dataclass / attr class using OmegaConf.to_object."
+                }
+            case HydraConvertValue.ALL:
+                return {"detail": "Convert everything to primitive containers."}

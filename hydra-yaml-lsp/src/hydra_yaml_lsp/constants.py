@@ -1,4 +1,13 @@
 from enum import StrEnum
+from typing import TypedDict
+
+
+class SpecialKeyInfo(TypedDict):
+    """Information about a Hydra special key for completion and hover
+    features."""
+
+    detail: str
+    documentation: str
 
 
 class HydraSpecialKey(StrEnum):
@@ -9,6 +18,40 @@ class HydraSpecialKey(StrEnum):
     RECURSIVE = "_recursive_"
     PARTIAL = "_partial_"
     CONVERT = "_convert_"
+
+    @property
+    def info(self) -> SpecialKeyInfo:
+        """Get detailed information about the special key.
+
+        Returns:
+            A dictionary with detail and documentation about the special key.
+        """
+        match self:
+            case HydraSpecialKey.TARGET:
+                return {
+                    "detail": "Target module path",
+                    "documentation": "Specifies the Python object to instantiate or call.",
+                }
+            case HydraSpecialKey.ARGS:
+                return {
+                    "detail": "Arguments for the target",
+                    "documentation": "Provides positional arguments for the target function or class.",
+                }
+            case HydraSpecialKey.RECURSIVE:
+                return {
+                    "detail": "Recursive resolution flag",
+                    "documentation": "Controls whether to recursively instantiate nested configurations.",
+                }
+            case HydraSpecialKey.PARTIAL:
+                return {
+                    "detail": "Partial instantiation flag",
+                    "documentation": "When true, returns a functools.partial instead of calling the target.",
+                }
+            case HydraSpecialKey.CONVERT:
+                return {
+                    "detail": "Conversion specification",
+                    "documentation": "Specifies how to convert the object after instantiation.",
+                }
 
 
 class HydraUtilityFunctions(StrEnum):

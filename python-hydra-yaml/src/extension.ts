@@ -100,6 +100,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     context.subscriptions.push(restartCommand);
 
+    // Shift+Enter for trigger completion.
+    const triggerCompletionCommand = vscode.commands.registerCommand('python-hydra-yaml.triggerCompletionWithEnter', async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return;
+      }
+
+      await vscode.commands.executeCommand('type', { text: '\n' });
+
+      await vscode.commands.executeCommand('editor.action.triggerSuggest');
+    });
+
+    context.subscriptions.push(triggerCompletionCommand);
+
     // Register status bar item to show server status
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     statusBarItem.text = '$(plug) Hydra YAML';

@@ -85,7 +85,7 @@ def get_hydra_special_key_completions(
     """
     items = []
     existing_keys = _get_existing_keys_in_current_block(
-        document.source.splitlines(), position.line
+        document.source.splitlines(), min(len(document.lines) - 1, position.line)
     )
 
     # Some special keys (like _args_, _partial_) are only applicable

@@ -17,7 +17,7 @@
   "contributes": {
     "configurationDefaults": {
       "[yaml]": {
-        "editor.acceptSuggestionOnEnter": "off",
+        "editor.acceptSuggestionOnEnter": "on",
         "editor.tabCompletion": "on"
       }
     },
@@ -25,6 +25,17 @@
       {
         "command": "python-hydra-yaml.restart",
         "title": "Restart Python Hydra YAML Language Server"
+      },
+      {
+        "command": "python-hydra-yaml.triggerCompletionWithEnter",
+        "title": "Trigger YAML Completion with Enter"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "python-hydra-yaml.triggerCompletionWithEnter",
+        "key": "shift+enter",
+        "when": "editorTextFocus && editorLangId == yaml"
       }
     ],
     "configuration": {

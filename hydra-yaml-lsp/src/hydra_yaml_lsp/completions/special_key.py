@@ -84,6 +84,10 @@ def get_hydra_special_key_completions(
             insert_text=f"{key}: ",
             insert_text_format=lsp.InsertTextFormat.Snippet,
             insert_text_mode=lsp.InsertTextMode.AdjustIndentation,
+            command=lsp.Command(
+                title="Trigger Completion",
+                command="editor.action.triggerSuggest",
+            ),
         )
         items.append(item)
     return items

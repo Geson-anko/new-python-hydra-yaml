@@ -18,7 +18,7 @@ def is_typing_key(document: Document, position: lsp.Position) -> bool:
     Returns:
         True if the user appears to be typing a key, False otherwise
     """
-    if len(document.lines) >= position.line:  # End of file.
+    if len(document.lines) <= position.line:  # End of file.
         return True
 
     line = document.lines[position.line]

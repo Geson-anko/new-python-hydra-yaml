@@ -121,7 +121,7 @@
       {
         "scopes": {
           "specialKey": [
-            "keyword"
+            "keyword.control.directive"
           ],
           "targetValue.module": [
             "entity.name.namespace"
@@ -148,7 +148,7 @@
             "entity.name.function"
           ],
           "interpolationBracket": [
-            "punctuation.definition.template"
+            "punctuation.definition.curly"
           ],
           "packageDirective": [
             "keyword.control.directive"

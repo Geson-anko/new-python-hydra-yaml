@@ -20,7 +20,8 @@ def register(server: LanguageServer) -> None:
     """
 
     @server.feature(
-        lsp.TEXT_DOCUMENT_COMPLETION, lsp.CompletionOptions(trigger_characters=["\n"])
+        lsp.TEXT_DOCUMENT_COMPLETION,
+        lsp.CompletionOptions(trigger_characters=["\n", " "]),
     )
     def special_key_completions(params: lsp.CompletionParams) -> lsp.CompletionList:
         document_uri = params.text_document.uri

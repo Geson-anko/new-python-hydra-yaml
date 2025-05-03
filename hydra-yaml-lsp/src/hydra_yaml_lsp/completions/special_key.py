@@ -84,7 +84,9 @@ def get_hydra_special_key_completions(
         A list of completion items for applicable Hydra special keys
     """
     items = []
-    existing_keys = _get_existing_keys_in_current_block(document.lines, position.line)
+    existing_keys = _get_existing_keys_in_current_block(
+        document.source.splitlines(), position.line
+    )
 
     # Some special keys (like _args_, _partial_) are only applicable
     # when _target_ is present in the same block

@@ -148,7 +148,7 @@
             "entity.name.function"
           ],
           "interpolationBracket": [
-            "punctuation.definition.curly"
+            "keyword.control.interpolation"
           ],
           "packageDirective": [
             "keyword.control.directive"

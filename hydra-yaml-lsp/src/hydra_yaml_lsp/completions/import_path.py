@@ -10,7 +10,7 @@ from lsprotocol import types as lsp
 from pygls.workspace import Document
 
 from hydra_yaml_lsp.completions.utils import is_typing_value
-from hydra_yaml_lsp.constants import HydraSpecialKey, HydraUtilityFunctions
+from hydra_yaml_lsp.constants import HydraSpecialKey, HydraUtilityFunction
 from hydra_yaml_lsp.utils import get_yaml_block_lines
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def is_typing_path_value(document: Document, position: lsp.Position) -> bool:
             target_value = target_parts[1].strip()
 
             # Check if target is a Hydra utility function
-            return HydraUtilityFunctions.is_hydra_utility_function(target_value)
+            return HydraUtilityFunction.is_hydra_utility_function(target_value)
 
     return False
 

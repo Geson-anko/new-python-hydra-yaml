@@ -2,7 +2,7 @@
 
 from textwrap import dedent
 
-from hydra_yaml_lsp.constants import HydraUtilityFunctions
+from hydra_yaml_lsp.constants import HydraUtilityFunction
 from hydra_yaml_lsp.core.detections.hydra_target import (
     ImportPathPosition,
     detect_hydra_targets,
@@ -535,7 +535,7 @@ class TestDetectTargetPaths:
 
         result = detect_target_paths(content)
         assert len(result) == 1
-        assert result[0].utility_function == HydraUtilityFunctions.GET_CLASS
+        assert result[0].utility_function == HydraUtilityFunction.GET_CLASS
         assert result[0].path.content == "tests.target_objects.Class"
 
     def test_multiple_utility_functions(self):
@@ -553,11 +553,11 @@ class TestDetectTargetPaths:
         assert len(result) == 2
 
         # First utility function
-        assert result[0].utility_function == HydraUtilityFunctions.GET_METHOD
+        assert result[0].utility_function == HydraUtilityFunction.GET_METHOD
         assert result[0].path.content == "tests.target_objects.function"
 
         # Second utility function
-        assert result[1].utility_function == HydraUtilityFunctions.GET_CLASS
+        assert result[1].utility_function == HydraUtilityFunction.GET_CLASS
         assert result[1].path.content == "tests.target_objects.Class"
 
     def test_utility_function_missing_path(self):
@@ -607,7 +607,7 @@ class TestDetectTargetPaths:
 
         # Check utility function types are correctly identified
         utility_functions = [info.utility_function for info in result]
-        assert HydraUtilityFunctions.GET_OBJECT in utility_functions
-        assert HydraUtilityFunctions.GET_CLASS in utility_functions
-        assert HydraUtilityFunctions.GET_METHOD in utility_functions
-        assert HydraUtilityFunctions.GET_STATIC_METHOD in utility_functions
+        assert HydraUtilityFunction.GET_OBJECT in utility_functions
+        assert HydraUtilityFunction.GET_CLASS in utility_functions
+        assert HydraUtilityFunction.GET_METHOD in utility_functions
+        assert HydraUtilityFunction.GET_STATIC_METHOD in utility_functions

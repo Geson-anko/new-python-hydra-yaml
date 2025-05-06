@@ -11,7 +11,7 @@ from typing import Literal
 import hydra.utils
 from ruamel import yaml
 
-from hydra_yaml_lsp.constants import HydraSpecialKey, HydraUtilityFunctions
+from hydra_yaml_lsp.constants import HydraSpecialKey, HydraUtilityFunction
 
 # Type definitions for Python object classification
 type ObjectType = Literal[
@@ -63,7 +63,7 @@ class ArgInfo:
 
 @dataclass(frozen=True)
 class HydraUtilityFunctionInfo:
-    utility_function: HydraUtilityFunctions
+    utility_function: HydraUtilityFunction
     path: ImportPathPosition
 
 
@@ -373,7 +373,7 @@ def detect_target_paths(content: str) -> list[HydraUtilityFunctionInfo]:
     results: list[HydraUtilityFunctionInfo] = []
 
     for info in detect_hydra_targets(content):
-        if info.value is None or not HydraUtilityFunctions.is_hydra_utility_function(
+        if info.value is None or not HydraUtilityFunction.is_hydra_utility_function(
             info.value.content
         ):
             continue
@@ -383,7 +383,7 @@ def detect_target_paths(content: str) -> list[HydraUtilityFunctionInfo]:
             if arg.key.content == "path":
                 results.append(
                     HydraUtilityFunctionInfo(
-                        HydraUtilityFunctions.from_import_path(info.value.content),
+                        HydraUtilityFunction.from_import_path(info.value.content),
                         ImportPathPosition(
                             arg.value.lineno,
                             arg.value.start,

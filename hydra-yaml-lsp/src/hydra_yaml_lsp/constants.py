@@ -54,7 +54,7 @@ class HydraSpecialKey(StrEnum):
                 }
 
 
-class HydraUtilityFunctions(StrEnum):
+class HydraUtilityFunction(StrEnum):
     GET_OBJECT = "get_object"
     GET_CLASS = "get_class"
     GET_METHOD = "get_method"

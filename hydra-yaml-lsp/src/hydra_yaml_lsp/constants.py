@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TypedDict
+from typing import Self, TypedDict
 
 
 class SpecialKeyInfo(TypedDict):
@@ -66,7 +66,13 @@ class HydraUtilityFunctions(StrEnum):
 
     @classmethod
     def is_hydra_utility_function(cls, path: str) -> bool:
-        return path.rsplit(".", 1)[-1] in cls
+        return path.startswith("hydra.utils.") and path.rsplit(".", 1)[-1] in cls
+
+    @classmethod
+    def from_import_path(cls, path: str) -> Self:
+        if cls.is_hydra_utility_function(path):
+            return cls(path.rsplit(".", 1)[-1])
+        raise ValueError(f"{path=} is not hydra utility function import path!")
 
 
 class ConvertValueInfo(TypedDict):

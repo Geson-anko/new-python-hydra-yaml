@@ -1,7 +1,7 @@
 """Hydra YAML semantic token definitions and utilities."""
 
 from dataclasses import dataclass, field
-from enum import IntEnum, IntFlag
+from enum import IntEnum, IntFlag, auto
 from typing import Self
 
 from hydra_yaml_lsp.core.detections import (
@@ -32,15 +32,17 @@ class TokenType(IntEnum):
     """Definition of semantic token types."""
 
     SPECIAL_KEY = 0  # Hydra special keys (_target_, _args_, etc.)
-    TARGET_VALUE = 1  # Values of _target_ fields
+    TARGET_VALUE = auto()  # Values of _target_ fields
+    TARGET_ARG = auto()  # Args keys of _target_ fields
     INTERPOLATION_REF = (
-        2  # Interpolation references (reference parts in ${path.to.value})
+        auto()  # Interpolation references (reference parts in ${path.to.value})
     )
-    INTERPOLATION_FUNC = 3  # Interpolation functions (function name in ${func:args})
-    INTERPOLATION_BRACKET = 4  # Interpolation brackets
-    PACKAGE_DIRECTIVE = 5  # @package directive
-    PACKAGE_NAME = 6  # Package name
-    TARGET_ARG = 7  # Args keys of _target_ fields
+    INTERPOLATION_FUNC = (
+        auto()
+    )  # Interpolation functions (function name in ${func:args})
+    INTERPOLATION_BRACKET = auto()  # Interpolation brackets
+    PACKAGE_DIRECTIVE = auto()  # @package directive
+    PACKAGE_NAME = auto()  # Package name
 
     @classmethod
     def get_legend(cls) -> list[str]:
@@ -52,14 +54,14 @@ class TokenModifier(IntFlag):
     """Definition of semantic token modifiers."""
 
     NONE = 0
-    DECLARATION = 1 << 0
-    REFERENCE = 1 << 1
-    FUNCTION = 1 << 2
-    MODULE = 1 << 3
-    CLASS = 1 << 4
-    VARIABLE = 1 << 5
-    CONSTANT = 1 << 6
-    BRACKET = 1 << 7
+    DECLARATION = auto()
+    REFERENCE = auto()
+    FUNCTION = auto()
+    MODULE = auto()
+    CLASS = auto()
+    VARIABLE = auto()
+    CONSTANT = auto()
+    BRACKET = auto()
 
     @classmethod
     def get_legend(cls) -> list[str]:

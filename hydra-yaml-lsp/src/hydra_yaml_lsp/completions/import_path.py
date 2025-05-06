@@ -3,6 +3,7 @@
 import inspect
 import logging
 import pkgutil
+import sys
 from functools import lru_cache
 
 import hydra.utils
@@ -137,7 +138,15 @@ def get_top_level_modules() -> tuple[str, ...]:
     Returns:
         Tuple of module names
     """
-    return tuple(m.name for m in pkgutil.iter_modules() if not m.name.startswith("_"))
+    installed_modules = {
+        m.name for m in pkgutil.iter_modules() if not m.name.startswith("_")
+    }
+
+    sys_modules = {
+        name.split(".")[0] for name in sys.modules if not name.startswith("_")
+    }
+
+    return tuple(sorted(installed_modules | sys_modules))
 
 
 def get_completion_for_import_path(prefix: str) -> list[lsp.CompletionItem]:

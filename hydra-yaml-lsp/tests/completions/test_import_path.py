@@ -145,6 +145,8 @@ class TestGetTopLevelModules:
 
         # Check some modules that should always be available
         assert "os" in modules
+        assert "sys" in modules
+        assert "builtins" in modules
         assert "inspect" in modules
         assert "json" in modules
 

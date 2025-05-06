@@ -2,9 +2,13 @@
 
 from textwrap import dedent
 
+from hydra_yaml_lsp.constants import HydraUtilityFunctions
 from hydra_yaml_lsp.core.detections.hydra_target_2 import (
     TargetValuePosition,
     detect_hydra_targets,
+    detect_target_arg_keys,
+    detect_target_paths,
+    detect_target_values,
     get_object_type,
 )
 
@@ -375,3 +379,235 @@ class TestDetectHydraTargets:
         assert target_info.value.content == "sample_python_project.YourClass"
         assert len(target_info.args) == 1
         assert target_info.args[0].key.content == "deep_arg"
+
+
+class TestDetectTargetValues:
+    """Tests for detect_target_values function."""
+
+    def test_empty_document(self):
+        """Test with an empty document."""
+        result = detect_target_values("")
+        assert result == []
+
+    def test_single_target(self):
+        """Test with a single target."""
+        content = dedent("""
+            component:
+              _target_: tests.target_objects.Class
+        """).strip()
+
+        result = detect_target_values(content)
+        assert len(result) == 1
+        assert result[0].content == "tests.target_objects.Class"
+        assert result[0].lineno == 1
+
+    def test_multiple_targets(self):
+        """Test with multiple targets."""
+        content = dedent("""
+            comp1:
+              _target_: tests.target_objects.function
+            comp2:
+              _target_: tests.target_objects.CONSTANT
+        """).strip()
+
+        result = detect_target_values(content)
+        assert len(result) == 2
+        assert result[0].content == "tests.target_objects.function"
+        assert result[1].content == "tests.target_objects.CONSTANT"
+
+    def test_target_without_value(self):
+        """Test with target key but no value."""
+        content = dedent("""
+            component:
+              _target_:
+        """).strip()
+
+        result = detect_target_values(content)
+        assert result == []
+
+
+class TestDetectTargetArgKeys:
+    """Tests for detect_target_arg_keys function."""
+
+    def test_empty_document(self):
+        """Test with an empty document."""
+        result = detect_target_arg_keys("")
+        assert result == []
+
+    def test_no_arguments(self):
+        """Test with target but no arguments."""
+        content = dedent("""
+            component:
+              _target_: tests.target_objects.Class
+        """).strip()
+
+        result = detect_target_arg_keys(content)
+        assert result == []
+
+    def test_single_argument(self):
+        """Test with single argument."""
+        content = dedent("""
+            component:
+              _target_: tests.target_objects.Class
+              arg1: value1
+        """).strip()
+
+        result = detect_target_arg_keys(content)
+        assert len(result) == 1
+        assert result[0].content == "arg1"
+        assert result[0].lineno == 2
+
+    def test_multiple_arguments(self):
+        """Test with multiple arguments."""
+        content = dedent("""
+            component:
+              _target_: tests.target_objects.Class
+              arg1: value1
+              arg2: value2
+              path: some.path
+        """).strip()
+
+        result = detect_target_arg_keys(content)
+        assert len(result) == 3
+        assert result[0].content == "arg1"
+        assert result[1].content == "arg2"
+        assert result[2].content == "path"
+
+    def test_arguments_without_values(self):
+        """Test with arguments that have no values."""
+        content = dedent("""
+            component:
+              _target_: tests.target_objects.Class
+              arg1:
+              arg2: value2
+        """).strip()
+
+        result = detect_target_arg_keys(content)
+        assert len(result) == 2
+        assert result[0].content == "arg1"
+        assert result[1].content == "arg2"
+
+    def test_multiple_components(self):
+        """Test with multiple components having arguments."""
+        content = dedent("""
+            comp1:
+              _target_: tests.target_objects.Class
+              arg1: value1
+            comp2:
+              _target_: tests.target_objects.function
+              param: test
+              option: 123
+        """).strip()
+
+        result = detect_target_arg_keys(content)
+        assert len(result) == 3
+        assert result[0].content == "arg1"
+        assert result[1].content == "param"
+        assert result[2].content == "option"
+
+
+class TestDetectTargetPaths:
+    """Tests for detect_target_paths function."""
+
+    def test_empty_document(self):
+        """Test with an empty document."""
+        result = detect_target_paths("")
+        assert result == []
+
+    def test_no_utility_functions(self):
+        """Test with targets that are not utility functions."""
+        content = dedent("""
+            component:
+              _target_: tests.target_objects.Class
+              path: some.path
+        """).strip()
+
+        result = detect_target_paths(content)
+        assert result == []
+
+    def test_utility_function_with_path(self):
+        """Test with utility function target and path argument."""
+        content = dedent("""
+            component:
+              _target_: hydra.utils.get_class
+              path: tests.target_objects.Class
+        """).strip()
+
+        result = detect_target_paths(content)
+        assert len(result) == 1
+        assert result[0].utility_function == HydraUtilityFunctions.GET_CLASS
+        assert result[0].path.content == "tests.target_objects.Class"
+
+    def test_multiple_utility_functions(self):
+        """Test with multiple utility functions with path arguments."""
+        content = dedent("""
+            comp1:
+              _target_: hydra.utils.get_method
+              path: tests.target_objects.function
+            comp2:
+              _target_: hydra.utils.get_class
+              path: tests.target_objects.Class
+        """).strip()
+
+        result = detect_target_paths(content)
+        assert len(result) == 2
+
+        # First utility function
+        assert result[0].utility_function == HydraUtilityFunctions.GET_METHOD
+        assert result[0].path.content == "tests.target_objects.function"
+
+        # Second utility function
+        assert result[1].utility_function == HydraUtilityFunctions.GET_CLASS
+        assert result[1].path.content == "tests.target_objects.Class"
+
+    def test_utility_function_missing_path(self):
+        """Test with utility function target but no path argument."""
+        content = dedent("""
+            component:
+              _target_: hydra.utils.get_method
+              other_arg: value
+        """).strip()
+
+        result = detect_target_paths(content)
+        assert result == []
+
+    def test_utility_function_empty_path(self):
+        """Test with utility function target and empty path argument."""
+        content = dedent("""
+            component:
+              _target_: hydra.utils.get_class
+              path:
+        """).strip()
+
+        result = detect_target_paths(content)
+        assert result == []
+
+    def test_all_utility_function_types(self):
+        """Test with all types of Hydra utility functions."""
+        content = dedent("""
+            get_object:
+              _target_: hydra.utils.get_object
+              path: tests.target_objects
+
+            get_class:
+              _target_: hydra.utils.get_class
+              path: tests.target_objects.Class
+
+            get_method:
+              _target_: hydra.utils.get_method
+              path: tests.target_objects.function
+
+            get_static_method:
+              _target_: hydra.utils.get_static_method
+              path: tests.target_objects.Class.static_method
+        """).strip()
+
+        result = detect_target_paths(content)
+        assert len(result) == 4
+
+        # Check utility function types are correctly identified
+        utility_functions = [info.utility_function for info in result]
+        assert HydraUtilityFunctions.GET_OBJECT in utility_functions
+        assert HydraUtilityFunctions.GET_CLASS in utility_functions
+        assert HydraUtilityFunctions.GET_METHOD in utility_functions
+        assert HydraUtilityFunctions.GET_STATIC_METHOD in utility_functions

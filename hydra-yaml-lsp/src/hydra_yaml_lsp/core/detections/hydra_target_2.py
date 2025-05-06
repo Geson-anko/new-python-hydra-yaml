@@ -11,7 +11,7 @@ from typing import Literal
 import hydra.utils
 from ruamel import yaml
 
-from hydra_yaml_lsp.constants import HydraSpecialKey
+from hydra_yaml_lsp.constants import HydraSpecialKey, HydraUtilityFunctions
 
 # Type definitions for Python object classification
 type ObjectType = Literal[
@@ -59,6 +59,12 @@ class ArgInfo:
 
     key: ArgKeyPosition
     value: ArgValuePosition | None = None
+
+
+@dataclass(frozen=True)
+class HydraUtilityFunctionInfo:
+    utility_function: HydraUtilityFunctions
+    path: ArgValuePosition
 
 
 @dataclass(frozen=True)
@@ -311,3 +317,74 @@ def detect_hydra_targets(content: str) -> tuple[HydraTargetInfo, ...]:
         process_token(token, stream)
 
     return tuple(results)
+
+
+def detect_target_values(content: str) -> list[TargetValuePosition]:
+    """Extract all target values from a YAML document.
+
+    Args:
+        content: The YAML document content as a string.
+
+    Returns:
+        A list of TargetValuePosition objects representing all _target_ values found.
+
+    Examples:
+        >>> content = "_target_: my.module.Class"
+        >>> detect_target_values(content)
+        [TargetValuePosition(lineno=0, start=9, end=24, content="my.module.Class")]
+    """
+    results: list[TargetValuePosition] = []
+
+    for info in detect_hydra_targets(content):
+        if info.value is not None:
+            results.append(info.value)
+    return results
+
+
+def detect_target_arg_keys(content: str) -> list[ArgKeyPosition]:
+    """Extract all argument keys associated with targets in a YAML document.
+
+    Args:
+        content: The YAML document content as a string.
+
+    Returns:
+        A list of ArgKeyPosition objects representing all argument keys found
+        in target configurations.
+
+    Examples:
+        >>> content = '''
+        ... component:
+        ...   _target_: my.Class
+        ...   arg1: value
+        ...   arg2: value
+        ... '''
+        >>> arg_keys = detect_target_arg_keys(content)
+        >>> [arg.content for arg in arg_keys]
+        ['arg1', 'arg2']
+    """
+    results: list[ArgKeyPosition] = []
+    for info in detect_hydra_targets(content):
+        for arg_info in info.args:
+            results.append(arg_info.key)
+    return results
+
+
+def detect_target_paths(content: str) -> list[HydraUtilityFunctionInfo]:
+    results: list[HydraUtilityFunctionInfo] = []
+
+    for info in detect_hydra_targets(content):
+        if info.value is None or not HydraUtilityFunctions.is_hydra_utility_function(
+            info.value.content
+        ):
+            continue
+        for arg in info.args:
+            if arg.value is None:
+                continue
+            if arg.key.content == "path":
+                results.append(
+                    HydraUtilityFunctionInfo(
+                        HydraUtilityFunctions.from_import_path(info.value.content),
+                        arg.value,
+                    )
+                )
+    return results

@@ -5,6 +5,7 @@ from enum import IntEnum, IntFlag
 from typing import Self
 
 from hydra_yaml_lsp.core.detections import (
+    ArgKeyPosition as TargetArgKeyPos,
     HydraPackagePosition,
     InterpolationHighlight,
     SpecialKeyPosition,
@@ -39,6 +40,7 @@ class TokenType(IntEnum):
     INTERPOLATION_BRACKET = 4  # Interpolation brackets
     PACKAGE_DIRECTIVE = 5  # @package directive
     PACKAGE_NAME = 6  # Package name
+    TARGET_ARG = 7  # Args keys of _target_ fields
 
     @classmethod
     def get_legend(cls) -> list[str]:
@@ -124,6 +126,16 @@ class SemanticToken:
             length=len(highlight.content),
             token_type=TokenType.TARGET_VALUE,
             token_modifiers=modifiers,
+        )
+
+    @classmethod
+    def from_target_arg_key(cls, position: TargetArgKeyPos) -> Self:
+        return cls(
+            line=position.lineno,
+            start=position.start,
+            length=len(position.content),
+            token_type=TokenType.TARGET_ARG,
+            token_modifiers=TokenModifier.VARIABLE,
         )
 
     @classmethod

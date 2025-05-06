@@ -1,389 +1,613 @@
+"""Test for detect_hydra_targets function."""
+
 from textwrap import dedent
 
+from hydra_yaml_lsp.constants import HydraUtilityFunction
 from hydra_yaml_lsp.core.detections.hydra_target import (
-    TargetValuePosition,
-    detect_target_path,
+    ImportPathPosition,
+    detect_hydra_targets,
+    detect_target_arg_keys,
+    detect_target_paths,
     detect_target_values,
+    get_object_type,
 )
 
 
-class TestTargetValueDetection:
-    """Test cases for target value detection in Hydra YAML files."""
+class TestGetObjectType:
+    """Tests for the get_object_type function."""
+
+    def test_module_detection(self):
+        """Test detection of Python modules."""
+        assert get_object_type("tests") == "module"
+        assert get_object_type("tests.target_objects") == "module"
+
+    def test_class_detection(self):
+        """Test detection of Python classes."""
+        assert get_object_type("tests.target_objects.Class") == "class"
+
+    def test_function_detection(self):
+        """Test detection of Python functions."""
+        assert get_object_type("tests.target_objects.function") == "function"
+        assert get_object_type("builtins.len") == "function"
+
+    def test_static_method_detection(self):
+        """Test detection of static methods."""
+        assert get_object_type("tests.target_objects.Class.static_method") == "function"
+
+    def test_class_method_detection(self):
+        """Test detection of class methods."""
+        assert get_object_type("tests.target_objects.Class.class_method") == "method"
+
+    def test_variable_detection(self):
+        """Test detection of Python variables."""
+        assert get_object_type("tests.target_objects.variable") == "variable"
+        assert get_object_type("tests.target_objects.Class.class_var") == "variable"
+
+    def test_constant_detection(self):
+        """Test detection of Python constants."""
+        assert get_object_type("tests.target_objects.CONSTANT") == "constant"
+        assert get_object_type("tests.target_objects.Class.CLASS_CONST") == "constant"
+
+    def test_non_existent_object(self):
+        """Test with non-existent objects or import paths."""
+        assert get_object_type("tests.target_objects.not_found") == "other"
+        assert get_object_type("non_existent_module") == "other"
+
+
+class TestImportPathPositionHighlights:
+    """Tests for ImportPathPosition.get_highlights method."""
+
+    def test_simple_path(self):
+        """Test get_highlights with a simple dotted path."""
+        target = ImportPathPosition(
+            lineno=0, start=10, end=30, content="tests.target_objects"
+        )
+        highlights = target.get_highlights()
+
+        assert len(highlights) == 2
+
+        # First component - "tests"
+        assert highlights[0].content == "tests"
+        assert highlights[0].start == 10
+        assert highlights[0].end == 15  # 10 + len("tests")
+        assert highlights[0].object_type == "module"
+
+        # Second component - "target_objects"
+        assert highlights[1].content == "target_objects"
+        assert highlights[1].start == 16  # 15 + 1 (for dot)
+        assert highlights[1].end == 30  # 16 + len("target_objects")
+        assert highlights[1].object_type == "module"
+
+    def test_complex_path(self):
+        """Test with a complex path including class, method."""
+        target = ImportPathPosition(
+            lineno=0,
+            start=0,
+            end=len("tests.target_objects.Class.class_method"),
+            content="tests.target_objects.Class.class_method",
+        )
+        highlights = target.get_highlights()
+
+        assert len(highlights) == 4
+
+        # Check each component
+        assert highlights[0].content == "tests"
+        assert highlights[0].object_type == "module"
+
+        assert highlights[1].content == "target_objects"
+        assert highlights[1].object_type == "module"
+
+        assert highlights[2].content == "Class"
+        assert highlights[2].object_type == "class"
+
+        assert highlights[3].content == "class_method"
+        assert highlights[3].object_type == "method"
+
+    def test_path_with_variable(self):
+        """Test with path ending in a variable."""
+        target = ImportPathPosition(
+            lineno=0,
+            start=0,
+            end=len("tests.target_objects.variable"),
+            content="tests.target_objects.variable",
+        )
+        highlights = target.get_highlights()
+
+        assert highlights[-1].object_type == "variable"
+        assert highlights[-1].content == "variable"
+
+    def test_path_with_constant(self):
+        """Test with path ending in a constant."""
+        target = ImportPathPosition(
+            lineno=0,
+            start=0,
+            end=len("tests.target_objects.CONSTANT"),
+            content="tests.target_objects.CONSTANT",
+        )
+        highlights = target.get_highlights()
+
+        assert highlights[-1].object_type == "constant"
+        assert highlights[-1].content == "CONSTANT"
+
+    def test_position_calculation(self):
+        """Test correct position calculation for highlights."""
+        target = ImportPathPosition(
+            lineno=5, start=100, end=120, content="tests.target_objects"
+        )
+        highlights = target.get_highlights()
+
+        # First component starts at target.start
+        assert highlights[0].start == 100
+        assert highlights[0].end == 105  # 100 + len("tests")
+
+        # Second component accounts for the dot
+        assert highlights[1].start == 106  # 105 + 1 (for dot)
+        assert highlights[1].end == 120  # Full end of target
+
+        # Check line numbers are preserved
+        assert all(h.lineno == 5 for h in highlights)
+
+    def test_non_existent_path(self):
+        """Test with path that doesn't resolve to real objects."""
+        target = ImportPathPosition(
+            lineno=0, start=0, end=len("fake.module.Class"), content="fake.module.Class"
+        )
+        highlights = target.get_highlights()
+
+        # All components should be classified as "other"
+        assert highlights[0].object_type == "other"
+        assert highlights[0].content == "fake"
+
+        assert highlights[1].object_type == "other"
+        assert highlights[1].content == "module"
+
+        assert highlights[2].object_type == "other"
+        assert highlights[2].content == "Class"
+
+
+class TestDetectHydraTargets:
+    """End-to-end tests for detect_hydra_targets function."""
+
+    def test_empty_document(self):
+        """Test with an empty document."""
+        result = detect_hydra_targets("")
+        assert result == ()
+
+    def test_single_target_without_arguments(self):
+        """Test document with a single _target_ key without arguments."""
+        content = dedent("""
+            component:
+              _target_: sample_python_project.YourClass
+        """).strip()
+
+        result = detect_hydra_targets(content)
+        assert len(result) == 1
+
+        target_info = result[0]
+        assert target_info.key.content == "_target_"
+        assert target_info.value is not None
+        assert target_info.value.content == "sample_python_project.YourClass"
+        assert target_info.value.lineno == 1
+        assert len(target_info.args) == 0
+
+    def test_single_target_with_arguments(self):
+        """Test document with a _target_ key and associated arguments."""
+        content = dedent("""
+            component:
+              _target_: sample_python_project.YourClass
+              arg1: 10
+              arg2: "test"
+        """).strip()
+
+        result = detect_hydra_targets(content)
+        assert len(result) == 1
+
+        target_info = result[0]
+        assert target_info.key.content == "_target_"
+        assert target_info.value is not None
+        assert target_info.value.content == "sample_python_project.YourClass"
+        assert len(target_info.args) == 2
+
+        # Check arguments
+        arg_info = target_info.args[0]
+        assert arg_info.key.content == "arg1"
+        assert arg_info.value is not None
+        assert arg_info.value.content == "10"
+
+        arg_info = target_info.args[1]
+        assert arg_info.key.content == "arg2"
+        assert arg_info.value is not None
+        assert arg_info.value.content == "test"
+
+    def test_multiple_targets(self):
+        """Test document with multiple _target_ keys."""
+        content = dedent("""
+            component1:
+              _target_: sample_python_project.YourClass
+              arg1: 5
+
+            component2:
+              _target_: sample_python_project.hello
+              message: "Hello"
+        """).strip()
+
+        result = detect_hydra_targets(content)
+        assert len(result) == 2
+
+        # First component
+        assert result[0].key.content == "_target_"
+        assert result[0].value is not None
+        assert result[0].value.content == "sample_python_project.YourClass"
+        assert len(result[0].args) == 1
+        assert result[0].args[0].key.content == "arg1"
+
+        # Second component
+        assert result[1].key.content == "_target_"
+        assert result[1].value is not None
+        assert result[1].value.content == "sample_python_project.hello"
+        assert len(result[1].args) == 1
+        assert result[1].args[0].key.content == "message"
+
+    def test_nested_targets(self):
+        """Test document with nested _target_ keys."""
+        content = dedent("""
+            parent:
+              _target_: sample_python_project.YourClass
+              child:
+                _target_: sample_python_project.hello
+        """).strip()
+
+        result = detect_hydra_targets(content)
+        assert len(result) == 2
+
+        # Parent target
+        assert result[0].key.content == "_target_"
+        assert result[0].value is not None
+        assert result[0].value.content == "sample_python_project.hello"
+
+        # Child target
+        assert result[1].key.content == "_target_"
+        assert result[1].value is not None
+        assert result[1].value.content == "sample_python_project.YourClass"
+
+    def test_target_with_special_keys(self):
+        """Test that other special keys are ignored and not counted as
+        arguments."""
+        content = dedent("""
+            component:
+              _target_: sample_python_project.YourClass
+              _args_: [1, 2, 3]
+              _partial_: true
+              arg1: value
+        """).strip()
+
+        result = detect_hydra_targets(content)
+        assert len(result) == 1
+
+        target_info = result[0]
+        assert target_info.key.content == "_target_"
+        assert target_info.value is not None
+        assert target_info.value.content == "sample_python_project.YourClass"
+
+        # Only non-special keys should be counted as arguments
+        assert len(target_info.args) == 1
+        assert target_info.args[0].key.content == "arg1"
+
+    def test_position_information(self):
+        """Test that position information is correctly captured."""
+        content = dedent("""
+            component:
+              _target_: sample_python_project.YourClass
+              arg1: 10
+        """).strip()
+
+        result = detect_hydra_targets(content)
+        target_info = result[0]
+
+        # Check key position
+        key_pos = target_info.key
+        assert key_pos.lineno == 1
+        assert key_pos.start == 2  # Position of "_target_" in the line
+        assert key_pos.end == 10  # End position
+
+        # Check value position
+        value_pos = target_info.value
+        assert value_pos is not None
+        assert value_pos.lineno == 1
+        assert value_pos.start > key_pos.end  # Should be after the key
+
+        # Check argument position
+        arg_pos = target_info.args[0].key
+        assert arg_pos.lineno == 2
+        assert arg_pos.start == 2  # Position of "arg1" in the line
+
+    def test_target_without_value(self):
+        """Test malformed YAML where _target_ has no value."""
+        content = dedent("""
+            component:
+              _target_:
+              arg1: value
+        """).strip()
+
+        result = detect_hydra_targets(content)
+        assert len(result) == 1
+
+        target_info = result[0]
+        assert target_info.key.content == "_target_"
+        assert target_info.value is None  # No value provided
+        assert len(target_info.args) == 1
+
+    def test_argument_without_value(self):
+        """Test argument key without a value."""
+        content = dedent("""
+            component:
+              _target_: sample_python_project.YourClass
+              arg1:
+              arg2: value
+        """).strip()
+
+        result = detect_hydra_targets(content)
+        target_info = result[0]
+
+        assert len(target_info.args) == 2
+
+        # First argument has no value
+        assert target_info.args[0].key.content == "arg1"
+        assert target_info.args[0].value is None
+
+        # Second argument has value
+        assert target_info.args[1].key.content == "arg2"
+        assert target_info.args[1].value is not None
+        assert target_info.args[1].value.content == "value"
+
+    def test_deeply_nested_structure(self):
+        """Test with deeply nested mapping structures."""
+        content = dedent("""
+            level1:
+              level2:
+                level3:
+                  _target_: sample_python_project.YourClass
+                  deep_arg: value
+        """).strip()
+
+        result = detect_hydra_targets(content)
+        assert len(result) == 1
+
+        target_info = result[0]
+        assert target_info.key.content == "_target_"
+        assert target_info.value is not None
+        assert target_info.value.content == "sample_python_project.YourClass"
+        assert len(target_info.args) == 1
+        assert target_info.args[0].key.content == "deep_arg"
+
+
+class TestDetectTargetValues:
+    """Tests for detect_target_values function."""
 
     def test_empty_document(self):
         """Test with an empty document."""
         result = detect_target_values("")
-        assert result == ()
+        assert result == []
 
-    def test_document_with_no_target_values(self):
-        """Test with a document containing no target values."""
+    def test_single_target(self):
+        """Test with a single target."""
         content = dedent("""
-            regular: value
-            another: item
-            third: element
+            component:
+              _target_: tests.target_objects.Class
         """).strip()
-        result = detect_target_values(content)
-        assert result == ()
 
-    def test_document_with_single_target_value(self):
-        """Test with a document containing a single target value."""
-        content = "_target_: module.path\nregular: value"
         result = detect_target_values(content)
-
         assert len(result) == 1
-        assert result[0].lineno == 0
-        assert result[0].start == len("_target_: ")
-        assert result[0].end == len("_target_: module.path")
-        assert result[0].content == "module.path"
+        assert result[0].content == "tests.target_objects.Class"
+        assert result[0].lineno == 1
 
-    def test_document_with_multiple_target_values(self):
-        """Test with a document containing multiple target values."""
+    def test_multiple_targets(self):
+        """Test with multiple targets."""
         content = dedent("""
-            component1:
-              _target_: path.to.component1
-            component2:
-              _target_: path.to.component2
+            comp1:
+              _target_: tests.target_objects.function
+            comp2:
+              _target_: tests.target_objects.CONSTANT
         """).strip()
-        result = detect_target_values(content)
 
+        result = detect_target_values(content)
         assert len(result) == 2
-        # First target value
-        assert result[0].content == "path.to.component1"
-        # Second target value
-        assert result[1].content == "path.to.component2"
+        assert result[0].content == "tests.target_objects.function"
+        assert result[1].content == "tests.target_objects.CONSTANT"
 
-    def test_document_with_nested_target_values(self):
-        """Test with a document containing nested structures with target
-        values."""
-        content = dedent("""
-            outer:
-              _target_: outer.module
-              nested:
-                _target_: nested.module
-                deeper:
-                  _target_: deepest.module
-        """).strip()
-        result = detect_target_values(content)
-
-        assert len(result) == 3
-        assert result[0].content == "outer.module"
-        assert result[1].content == "nested.module"
-        assert result[2].content == "deepest.module"
-
-    def test_document_with_target_and_other_special_keys(self):
-        """Test with a document containing both target and other special
-        keys."""
+    def test_target_without_value(self):
+        """Test with target key but no value."""
         content = dedent("""
             component:
-              _target_: path.to.class
-              _args_: [1, 2, 3]
-              _partial_: true
+              _target_:
         """).strip()
+
         result = detect_target_values(content)
-
-        assert len(result) == 1
-        assert result[0].content == "path.to.class"
-
-    def test_multiline_target_value(self):
-        """Test with a target value spanning multiple lines."""
-        content = dedent("""
-            component:
-              _target_: >-
-                very.long.path.to.module.with.
-                line.breaks.ClassName
-        """).strip()
-        result = detect_target_values(content)
-
-        assert len(result) == 1
-        assert "very.long.path" in result[0].content
-        assert "line.breaks.ClassName" in result[0].content
-
-    def test_caching(self):
-        """Test that results are cached properly."""
-        content = "_target_: module.path"
-
-        # First call should compute the result
-        result1 = detect_target_values(content)
-
-        # Second call should use the cached result
-        result2 = detect_target_values(content)
-
-        # Results should be identical
-        assert result1 == result2
-
-        # And should be the expected values
-        expected = (
-            TargetValuePosition(
-                lineno=0,
-                start=len("_target_: "),
-                end=len("_target_: module.path"),
-                content="module.path",
-            ),
-        )
-        assert result1 == expected
-
-        # Check cache info
-        info = detect_target_values.cache_info()
-        assert info.hits >= 1
+        assert result == []
 
 
-class TestTargetValueHighlights:
-    """Tests for target value highlights functionality."""
-
-    def test_module_detection(self):
-        """Test detection of Python modules."""
-        yaml_content = """
-        module:
-          _target_: tests.target_objects
-        """
-        target = detect_target_values(yaml_content)[0]
-        highlights = target.get_highlights()
-
-        # Verify correct number of components
-        assert len(highlights) == 2
-
-        # Verify all components are detected as modules
-        assert all(h.object_type == "module" for h in highlights)
-
-        # Verify content of components
-        assert [h.content for h in highlights] == ["tests", "target_objects"]
-
-    def test_variable_detection(self):
-        """Test detection of Python variables."""
-        yaml_content = """
-        var:
-          _target_: tests.target_objects.variable
-        """
-        target = detect_target_values(yaml_content)[0]
-        highlights = target.get_highlights()
-
-        # Verify the last component is a variable
-        assert highlights[-1].object_type == "variable"
-        assert highlights[-1].content == "variable"
-
-    def test_constant_detection(self):
-        """Test detection of Python constants."""
-        yaml_content = """
-        const:
-          _target_: tests.target_objects.CONSTANT
-        """
-        target = detect_target_values(yaml_content)[0]
-        highlights = target.get_highlights()
-
-        # Verify the last component is a constant
-        assert highlights[-1].object_type == "constant"
-        assert highlights[-1].content == "CONSTANT"
-
-    def test_function_detection(self):
-        """Test detection of Python functions."""
-        yaml_content = """
-        func:
-          _target_: tests.target_objects.function
-        """
-        target = detect_target_values(yaml_content)[0]
-        highlights = target.get_highlights()
-
-        # Verify the last component is a function
-        assert highlights[-1].object_type == "function"
-        assert highlights[-1].content == "function"
-
-    def test_class_detection(self):
-        """Test detection of Python classes."""
-        yaml_content = """
-        class:
-          _target_: tests.target_objects.Class
-        """
-        target = detect_target_values(yaml_content)[0]
-        highlights = target.get_highlights()
-
-        # Verify the last component is a class
-        assert highlights[-1].object_type == "class"
-        assert highlights[-1].content == "Class"
-
-    def test_class_attribute_detection(self):
-        """Test detection of class attributes."""
-        yaml_content = """
-        class_var:
-          _target_: tests.target_objects.Class.class_var
-        class_const:
-          _target_: tests.target_objects.Class.CLASS_CONST
-        """
-        targets = detect_target_values(yaml_content)
-
-        # Test class variable
-        var_highlights = targets[0].get_highlights()
-        assert var_highlights[-1].object_type == "variable"
-        assert var_highlights[-1].content == "class_var"
-
-        # Test class constant
-        const_highlights = targets[1].get_highlights()
-        assert const_highlights[-1].object_type == "constant"
-        assert const_highlights[-1].content == "CLASS_CONST"
-
-    def test_class_method_detection(self):
-        """Test detection of class methods."""
-        yaml_content = """
-        static_method:
-          _target_: tests.target_objects.Class.static_method
-        class_method:
-          _target_: tests.target_objects.Class.class_method
-        """
-        targets = detect_target_values(yaml_content)
-
-        # Test static method
-        static_highlights = targets[0].get_highlights()
-        assert static_highlights[-1].object_type == "function"
-        assert static_highlights[-1].content == "static_method"
-
-        # Test class method
-        class_method_highlights = targets[1].get_highlights()
-        assert class_method_highlights[-1].object_type == "method"
-        assert class_method_highlights[-1].content == "class_method"
-
-    def test_other_detection(self):
-        yaml_content = "_target_: tests.target_object.not_found"
-        targets = detect_target_values(yaml_content)
-
-        highlight = targets[0].get_highlights()[-1]
-        assert highlight.content == "not_found"
-        assert highlight.object_type == "other"
-
-    def test_position_calculation(self):
-        """Test correct position calculation of highlights."""
-        yaml_content = "_target_: tests.core"
-        target = detect_target_values(yaml_content)[0]
-        highlights = target.get_highlights()
-
-        # First component starts at target.start
-        assert highlights[0].start == len("_target_: ")
-        assert highlights[0].end == len("_target_: tests")
-
-        # Second component accounts for the dot
-        assert highlights[1].start == len("_target_: tests.")
-        assert highlights[1].end == highlights[1].start + len("core")
-
-
-class TestTargetPathDetection:
-    """Test cases for target path detection in Hydra YAML files."""
+class TestDetectTargetArgKeys:
+    """Tests for detect_target_arg_keys function."""
 
     def test_empty_document(self):
         """Test with an empty document."""
-        result = detect_target_path("")
-        assert result == ()
+        result = detect_target_arg_keys("")
+        assert result == []
 
-    def test_document_with_no_targets_or_paths(self):
-        """Test with a document containing no targets or paths."""
-        content = dedent("""
-            regular: value
-            another: item
-            third: element
-        """).strip()
-        result = detect_target_path(content)
-        assert result == ()
-
-    def test_document_with_target_but_no_path(self):
-        """Test with a document containing a target but no path."""
+    def test_no_arguments(self):
+        """Test with target but no arguments."""
         content = dedent("""
             component:
-              _target_: hydra.utils.get_method
+              _target_: tests.target_objects.Class
+        """).strip()
+
+        result = detect_target_arg_keys(content)
+        assert result == []
+
+    def test_single_argument(self):
+        """Test with single argument."""
+        content = dedent("""
+            component:
+              _target_: tests.target_objects.Class
               arg1: value1
         """).strip()
-        result = detect_target_path(content)
-        assert result == ()
 
-    def test_document_with_path_but_no_target(self):
-        """Test with a document containing a path but no target."""
+        result = detect_target_arg_keys(content)
+        assert len(result) == 1
+        assert result[0].content == "arg1"
+        assert result[0].lineno == 2
+
+    def test_multiple_arguments(self):
+        """Test with multiple arguments."""
         content = dedent("""
             component:
-              path: module.path.function
+              _target_: tests.target_objects.Class
               arg1: value1
+              arg2: value2
+              path: some.path
         """).strip()
-        result = detect_target_path(content)
-        assert result == ()
 
-    def test_document_with_non_utility_target_and_path(self):
-        """Test with a document containing a non-utility target and path."""
+        result = detect_target_arg_keys(content)
+        assert len(result) == 3
+        assert result[0].content == "arg1"
+        assert result[1].content == "arg2"
+        assert result[2].content == "path"
+
+    def test_arguments_without_values(self):
+        """Test with arguments that have no values."""
         content = dedent("""
             component:
-              _target_: regular.module.Class
-              path: module.path.function
+              _target_: tests.target_objects.Class
+              arg1:
+              arg2: value2
         """).strip()
-        result = detect_target_path(content)
-        assert result == ()
 
-    def test_document_with_utility_target_and_path(self):
-        """Test with a document containing a utility target and path."""
+        result = detect_target_arg_keys(content)
+        assert len(result) == 2
+        assert result[0].content == "arg1"
+        assert result[1].content == "arg2"
+
+    def test_multiple_components(self):
+        """Test with multiple components having arguments."""
+        content = dedent("""
+            comp1:
+              _target_: tests.target_objects.Class
+              arg1: value1
+            comp2:
+              _target_: tests.target_objects.function
+              param: test
+              option: 123
+        """).strip()
+
+        result = detect_target_arg_keys(content)
+        assert len(result) == 3
+        assert result[0].content == "arg1"
+        assert result[1].content == "param"
+        assert result[2].content == "option"
+
+
+class TestDetectTargetPaths:
+    """Tests for detect_target_paths function."""
+
+    def test_empty_document(self):
+        """Test with an empty document."""
+        result = detect_target_paths("")
+        assert result == []
+
+    def test_no_utility_functions(self):
+        """Test with targets that are not utility functions."""
         content = dedent("""
             component:
+              _target_: tests.target_objects.Class
+              path: some.path
+        """).strip()
+
+        result = detect_target_paths(content)
+        assert result == []
+
+    def test_utility_function_with_path(self):
+        """Test with utility function target and path argument."""
+        content = dedent("""
+            component:
+              _target_: hydra.utils.get_class
+              path: tests.target_objects.Class
+        """).strip()
+
+        result = detect_target_paths(content)
+        assert len(result) == 1
+        assert result[0].utility_function == HydraUtilityFunction.GET_CLASS
+        assert result[0].path.content == "tests.target_objects.Class"
+
+    def test_multiple_utility_functions(self):
+        """Test with multiple utility functions with path arguments."""
+        content = dedent("""
+            comp1:
               _target_: hydra.utils.get_method
               path: tests.target_objects.function
-        """).strip()
-        result = detect_target_path(content)
-
-        assert len(result) == 1
-        assert result[0].content == "tests.target_objects.function"
-
-    def test_document_with_multiple_utility_blocks(self):
-        """Test with a document containing multiple utility blocks."""
-        content = dedent("""
-            component1:
-              _target_: hydra.utils.get_method
-              path: module1.path.function
-
-            component2:
-              _target_: regular.module.Class
-              path: module2.path.function
-
-            component3:
+            comp2:
               _target_: hydra.utils.get_class
-              path: module3.path.Class
-        """).strip()
-        result = detect_target_path(content)
-
-        assert len(result) == 2
-        assert result[0].content == "module1.path.function"
-        assert result[1].content == "module3.path.Class"
-
-    def test_document_with_nested_blcoks(self):
-        content = dedent("""
-            component1:
-              _target_: hydra.utils.get_method
-              path: module1.path.function
-
-              component2:
-                _target_: regular.module.Class
-                path: module2.path.function
-
-              component3:
-                _target_: hydra.utils.get_class
-                path: module3.path.Class
+              path: tests.target_objects.Class
         """).strip()
 
-        result = detect_target_path(content)
+        result = detect_target_paths(content)
         assert len(result) == 2
 
-        assert result[0].content in ["module3.path.Class", "module1.path.function"]
-        assert result[1].content in ["module3.path.Class", "module1.path.function"]
+        # First utility function
+        assert result[0].utility_function == HydraUtilityFunction.GET_METHOD
+        assert result[0].path.content == "tests.target_objects.function"
 
-    def test_caching(self):
-        """Test that results are cached properly."""
+        # Second utility function
+        assert result[1].utility_function == HydraUtilityFunction.GET_CLASS
+        assert result[1].path.content == "tests.target_objects.Class"
+
+    def test_utility_function_missing_path(self):
+        """Test with utility function target but no path argument."""
         content = dedent("""
             component:
               _target_: hydra.utils.get_method
-              path: module.path.function
+              other_arg: value
         """).strip()
 
-        # First call should compute the result
-        result1 = detect_target_path(content)
+        result = detect_target_paths(content)
+        assert result == []
 
-        # Second call should use the cached result
-        result2 = detect_target_path(content)
+    def test_utility_function_empty_path(self):
+        """Test with utility function target and empty path argument."""
+        content = dedent("""
+            component:
+              _target_: hydra.utils.get_class
+              path:
+        """).strip()
 
-        # Results should be identical
-        assert result1 == result2
-        assert len(result1) == 1
-        assert result1[0].content == "module.path.function"
+        result = detect_target_paths(content)
+        assert result == []
 
-        # Check cache info
-        info = detect_target_path.cache_info()
-        assert info.hits >= 1
+    def test_all_utility_function_types(self):
+        """Test with all types of Hydra utility functions."""
+        content = dedent("""
+            get_object:
+              _target_: hydra.utils.get_object
+              path: tests.target_objects
+
+            get_class:
+              _target_: hydra.utils.get_class
+              path: tests.target_objects.Class
+
+            get_method:
+              _target_: hydra.utils.get_method
+              path: tests.target_objects.function
+
+            get_static_method:
+              _target_: hydra.utils.get_static_method
+              path: tests.target_objects.Class.static_method
+        """).strip()
+
+        result = detect_target_paths(content)
+        assert len(result) == 4
+
+        # Check utility function types are correctly identified
+        utility_functions = [info.utility_function for info in result]
+        assert HydraUtilityFunction.GET_OBJECT in utility_functions
+        assert HydraUtilityFunction.GET_CLASS in utility_functions
+        assert HydraUtilityFunction.GET_METHOD in utility_functions
+        assert HydraUtilityFunction.GET_STATIC_METHOD in utility_functions

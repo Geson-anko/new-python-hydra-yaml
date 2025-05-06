@@ -12,7 +12,7 @@ from pygls.workspace import Document
 
 from hydra_yaml_lsp.completions.utils import is_typing_value
 from hydra_yaml_lsp.constants import HydraSpecialKey, HydraUtilityFunction
-from hydra_yaml_lsp.utils import get_yaml_block_lines
+from hydra_yaml_lsp.utils import clean_yaml_block_lines, get_yaml_block_lines
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,6 @@ def is_typing_path_value(document: Document, position: lsp.Position) -> bool:
     Returns:
         True if the user is typing a path value, False otherwise
     """
-
     line = document.lines[position.line]
     line_prefix = line[: position.character].strip()
     if not (line.strip().startswith("path:") or "path:" in line_prefix):
@@ -36,18 +35,16 @@ def is_typing_path_value(document: Document, position: lsp.Position) -> bool:
 
     # Get the current YAML block
     block_lines = get_yaml_block_lines(document.source.splitlines(), position.line)
+    cleaned_lines = clean_yaml_block_lines(block_lines)
 
     # Look for a _target_ line with Hydra utility function
-    for block_line in block_lines:
-        if HydraSpecialKey.TARGET in block_line:
-            # Extract the target value
-            target_parts = block_line.split(f"{HydraSpecialKey.TARGET}:", 1)
-            if len(target_parts) < 2:
+    for line in cleaned_lines:
+        if line.startswith(f"{HydraSpecialKey.TARGET}:"):
+            parts = line.split(":", 1)
+            if len(parts) < 2:
                 continue
 
-            target_value = target_parts[1].strip()
-
-            # Check if target is a Hydra utility function
+            target_value = parts[1].strip()
             return HydraUtilityFunction.is_hydra_utility_function(target_value)
 
     return False

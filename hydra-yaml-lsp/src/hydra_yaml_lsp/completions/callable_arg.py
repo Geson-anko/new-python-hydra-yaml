@@ -8,7 +8,7 @@ from lsprotocol import types as lsp
 from pygls.workspace import Document
 
 from hydra_yaml_lsp.constants import HydraSpecialKey
-from hydra_yaml_lsp.utils import get_yaml_block_lines
+from hydra_yaml_lsp.utils import clean_yaml_block_lines, get_yaml_block_lines
 
 from .utils import is_typing_key
 
@@ -36,26 +36,19 @@ def get_existing_keys_in_block(block_lines: list[str]) -> set[str]:
     """Get all existing keys in the current YAML block.
 
     Args:
-        block_lines: List of lines in the current YAML block
+        block_lines: List of lines in the current YAML block (cleaned or not)
 
     Returns:
         Set of existing key names
     """
+    cleaned_lines = clean_yaml_block_lines(block_lines)
     existing_keys = set()
-    for line in block_lines:
-        # Skip lines that don't have a colon
-        if ":" not in line:
-            continue
 
-        # Skip special keys
-        line = line.strip()
-        # Extract key
-        key = line.split(":", 1)[0].strip()
-        if key in HydraSpecialKey:
-            continue
-
-        if key:
-            existing_keys.add(key)
+    for line in cleaned_lines:
+        if ":" in line:
+            key = line.split(":", 1)[0].strip()
+            if key and key not in HydraSpecialKey:
+                existing_keys.add(key)
 
     return existing_keys
 

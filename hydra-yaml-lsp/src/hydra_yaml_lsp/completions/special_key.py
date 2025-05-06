@@ -2,7 +2,7 @@ from lsprotocol import types as lsp
 from pygls.workspace import Document
 
 from hydra_yaml_lsp.constants import HydraSpecialKey
-from hydra_yaml_lsp.utils import get_yaml_block_lines
+from hydra_yaml_lsp.utils import clean_yaml_block_lines, get_yaml_block_lines
 
 from .utils import is_typing_key
 
@@ -22,15 +22,10 @@ def _get_existing_keys_in_current_block(
     Returns:
         A set of existing key names in the current block
     """
-    block_lines = get_yaml_block_lines(content_lines, lineno)
+    block_lines = clean_yaml_block_lines(get_yaml_block_lines(content_lines, lineno))
     existing_keys = set()
 
     for line in block_lines:
-        line = line.lstrip()
-        if line.startswith("- "):
-            # Handle sequence items by removing the dash prefix
-            line = line[2:].lstrip()
-
         if ":" in line:
             key = line.strip().split(":", 1)[0].strip()
             if key:

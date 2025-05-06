@@ -86,3 +86,36 @@ def get_yaml_block_lines(yaml_lines: list[str], lineno: int) -> list[str]:
         line_num += 1
 
     return list(block_lines)
+
+
+def clean_yaml_block_lines(block_lines: list[str]) -> list[str]:
+    """Clean up YAML block lines by removing all leading whitespace and
+    sequence markers.
+
+    Args:
+        block_lines: A list of strings representing the YAML block lines.
+
+    Returns:
+        A list of strings with all leading whitespace and sequence markers removed.
+
+    Example:
+        >>> clean_yaml_block_lines(["  - aaa: 0", "     bbb: 1", "     ccc: 2"])
+        ["aaa: 0", "bbb: 1", "ccc: 2"]
+    """
+    cleaned_lines = []
+
+    for line in block_lines:
+        if not line.strip():
+            # Skip empty lines
+            continue
+
+        # Remove all leading whitespace
+        line = line.lstrip()
+
+        # Remove sequence marker if present
+        if line.startswith("- "):
+            line = line[2:]
+
+        cleaned_lines.append(line)
+
+    return cleaned_lines

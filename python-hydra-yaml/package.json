@@ -59,6 +59,10 @@
         "description": "Values of _target_ fields"
       },
       {
+        "id": "targetArg",
+        "description": "Arg keys of _target_ fields"
+      },
+      {
         "id": "interpolationRef",
         "description": "Interpolation references"
       },
@@ -140,6 +144,9 @@
           ],
           "targetValue.other": [
             "other"
+          ],
+          "targetArg": [
+            "variable"
           ],
           "interpolationRef": [
             "variable.reference"

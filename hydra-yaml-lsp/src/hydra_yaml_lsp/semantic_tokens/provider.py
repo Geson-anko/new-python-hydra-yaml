@@ -10,6 +10,7 @@ from hydra_yaml_lsp.core.detections import (
     detect_hydra_package,
     detect_interpolation_positions,
     detect_special_keys,
+    detect_target_arg_keys,
     detect_target_paths,
     detect_target_values,
 )
@@ -69,6 +70,13 @@ def get_tokens_data_for_document(document: Document) -> list[int]:
                 builder.add_tokens(SemanticToken.from_target_highlight(highlight))
     except Exception as e:
         logger.error(f"Error has occurred in target values detection:\n{e}")
+
+    try:
+        # Add target arg keys
+        for arg in detect_target_arg_keys(text):
+            builder.add_tokens(SemanticToken.from_target_arg_key(arg))
+    except Exception as e:
+        logger.error(f"Error has occurred in target args detection:\n{e}")
 
     try:
         # Add target path value

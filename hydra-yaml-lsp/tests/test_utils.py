@@ -1,6 +1,6 @@
 """Tests for YAML utility functions."""
 
-from hydra_yaml_lsp.utils import get_yaml_block_lines
+from hydra_yaml_lsp.utils import clean_yaml_block_lines, get_yaml_block_lines
 
 
 class TestGetYamlBlockLines:
@@ -153,3 +153,29 @@ class TestGetYamlBlockLines:
             "  string in YAML",
             "  that spans multiple lines",
         ]
+
+
+class TestCleanYamlBlockLines:
+    """Test cases for clean_yaml_block_lines function."""
+
+    def test_basic_indentation_and_sequence_markers(self):
+        """Test with basic indentation and sequence markers."""
+        block_lines = ["  - aaa: 0", "     bbb: 1", "     ccc: 2"]
+        result = clean_yaml_block_lines(block_lines)
+        assert result == ["aaa: 0", "bbb: 1", "ccc: 2"]
+
+    def test_mixed_indentation(self):
+        """Test with mixed indentation styles."""
+        block_lines = ["  key1: value1", "    key2: value2", "  - key3: value3"]
+        result = clean_yaml_block_lines(block_lines)
+        assert result == ["key1: value1", "key2: value2", "key3: value3"]
+
+    def test_with_empty_lines(self):
+        """Test with empty lines that should be filtered out."""
+        block_lines = ["  key1: value1", "", "  key2: value2"]
+        result = clean_yaml_block_lines(block_lines)
+        assert result == ["key1: value1", "key2: value2"]
+
+    def test_empty_input(self):
+        """Test with empty input list."""
+        assert clean_yaml_block_lines([]) == []

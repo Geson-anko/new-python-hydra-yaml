@@ -5,6 +5,7 @@ import logging
 from lsprotocol import types as lsp
 from pygls.server import LanguageServer
 
+from .callable_arg import get_callable_arg_completions
 from .import_path import get_import_path_completions
 from .special_key import get_hydra_special_key_completions
 from .special_key_value import get_hydra_special_key_value_completions
@@ -40,6 +41,8 @@ def register(server: LanguageServer) -> None:
             items.extend(get_hydra_special_key_value_completions(document, position))
             # Add Python import path completions
             items.extend(get_import_path_completions(document, position))
+            # Add callable argument completions
+            items.extend(get_callable_arg_completions(document, position))
         except Exception as e:
             logger.error(f"Error providing completions: {e}")
 

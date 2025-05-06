@@ -50,16 +50,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Client options
     const clientOptions: LanguageClientOptions = {
+      // Enable output channel for debugging
+      outputChannelName: 'Hydra YAML Language Server',
       // Register the server for YAML files
       documentSelector: [
         { scheme: 'file', language: 'yaml' }
       ],
       // Synchronize relevant file events
       synchronize: {
-        fileEvents: vscode.workspace.createFileSystemWatcher('**/*.{yaml,yml}')
+        fileEvents: vscode.workspace.createFileSystemWatcher('**/*.{yaml,yml}'),
       },
-      // Enable output channel for debugging
-      outputChannelName: 'Hydra YAML Language Server'
+      initializationOptions: {
+        configDirs: vscode.workspace.getConfiguration('pythonHydraYaml').get('configDirs', [])
+      },
+      middleware: {
+        workspace: {
+          didChangeConfiguration: async () => {
+            // Send settings update request if settings are changed.
+            client?.sendNotification('custom/updateConfiguration', {
+              configDirs: vscode.workspace.getConfiguration('pythonHydraYaml').get('configDir', '')
+            });
+          }
+        }
+      }
     };
 
     // Create and start the client

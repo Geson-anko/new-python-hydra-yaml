@@ -42,10 +42,10 @@
       "type": "object",
       "title": "Hydra YAML",
       "properties": {
-        "hydraYaml.pythonPath": {
+        "pythonHydraYaml.configDir": {
           "type": "string",
-          "default": "python",
-          "description": "Fallback Python executable path (used if VS Code Python extension is not available)"
+          "default": "",
+          "description": "Root directory containing Hydra YAML configuration files. Extension will only process YAML files in this directory and its subdirectories."
         }
       }
     },

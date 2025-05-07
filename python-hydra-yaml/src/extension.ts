@@ -12,50 +12,72 @@ let client: LanguageClient | undefined;
 /**
  * Gets the path to the active Python interpreter from VS Code Python extension
  */
-
 export async function getActivePythonPath(): Promise<string | undefined> {
-	try {
-	  const pythonApi = await PythonExtension.api();
-	  const activePath = pythonApi.environments.getActiveEnvironmentPath();
-	  return activePath?.path;
-	} catch {
-	  return undefined;
-	}
+  try {
+    const pythonApi = await PythonExtension.api();
+    const activePath = pythonApi.environments.getActiveEnvironmentPath();
+    return activePath?.path;
+  } catch {
+    return undefined;
   }
+}
+
+/**
+ * Prompts the user to select a Python interpreter
+ */
+async function selectPythonInterpreter(): Promise<string | undefined> {
+  await vscode.commands.executeCommand('python.setInterpreter');
+  return await getActivePythonPath();
+}
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log('Activating Hydra YAML extension');
 
-    // Register the selectConfigDir command
-    const selectConfigDirCommand = vscode.commands.registerCommand(
-      'python-hydra-yaml.selectConfigDir',
-      selectConfigDir
-    );
-    context.subscriptions.push(selectConfigDirCommand);
+  // Register the selectConfigDir command
+  const selectConfigDirCommand = vscode.commands.registerCommand(
+    'python-hydra-yaml.selectConfigDir',
+    selectConfigDir
+  );
+  context.subscriptions.push(selectConfigDirCommand);
 
-    // Check if configDir is set, and prompt user if not
-    let configDir = vscode.workspace.getConfiguration('pythonHydraYaml').get('configDir', '');
-    if (!configDir) {
+  // Check if configDir is set, and prompt user if not
+  let configDir = vscode.workspace.getConfiguration('pythonHydraYaml').get('configDir', '');
+  if (!configDir) {
+    const result = await vscode.window.showInformationMessage(
+      'No Hydra configuration directory selected. Would you like to select one?',
+      'Select Directory', 'Cancel'
+    );
+
+    if (result === 'Select Directory') {
+      configDir = await selectConfigDir() || '';
+    }
+  }
+  if (!configDir){
+    return;
+  }
+
+  try {
+    // Get Python interpreter path
+    let pythonPath = await getActivePythonPath();
+
+    // If no Python interpreter is selected, prompt the user to select one
+    if (!pythonPath) {
       const result = await vscode.window.showInformationMessage(
-        'No Hydra configuration directory selected. Would you like to select one?',
-        'Select Directory', 'Cancel'
+        'No Python interpreter selected. Would you like to select one?',
+        'Select Interpreter', 'Cancel'
       );
 
-      if (result === 'Select Directory') {
-        configDir = await selectConfigDir() || '';
+      if (result === 'Select Interpreter') {
+        pythonPath = await selectPythonInterpreter();
+      }
+
+      if (!pythonPath) {
+        console.log("Can not get Python Interpreter.");
+        vscode.window.showErrorMessage('Failed to start Hydra YAML Language Server: No Python interpreter selected');
+        return;
       }
     }
-    if (!configDir){
-        return;
-    }
 
-    try {
-      // Get Python interpreter path
-      const pythonPath = await getActivePythonPath();
-    if (!pythonPath){
-      console.log("Can not get Python Interpreter.");
-      return;
-    }
     console.log(`Using Python interpreter: ${pythonPath}`);
 
     // Server module path
@@ -73,13 +95,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Client options
     const clientOptions: LanguageClientOptions = {
-      // Enable output channel for debugging
       outputChannelName: 'Hydra YAML Language Server',
-      // Register the server for YAML files
       documentSelector: [
         { scheme: 'file', language: 'yaml' }
       ],
-      // Synchronize relevant file events
       synchronize: {
         fileEvents: vscode.workspace.createFileSystemWatcher('**/*.{yaml,yml}'),
       },
@@ -96,10 +115,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       clientOptions
     );
 
-    // Start the client - client.start() returns a Promise, not a Disposable
     client.start();
 
-    // Add a proper disposable for the client
     context.subscriptions.push({
       dispose: () => {
         if (client) {
@@ -134,7 +151,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
 
       await vscode.commands.executeCommand('type', { text: '\n' });
-
       await vscode.commands.executeCommand('editor.action.triggerSuggest');
     });
 
@@ -161,7 +177,6 @@ export function deactivate(): Thenable<void> | undefined {
   console.log('Deactivating Hydra YAML extension');
   return client.stop();
 }
-
 
 // Function to select config directory
 async function selectConfigDir(): Promise<string | undefined> {

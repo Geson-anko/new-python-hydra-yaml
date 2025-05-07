@@ -3,7 +3,8 @@
 import logging
 
 from lsprotocol import types as lsp
-from pygls.server import LanguageServer
+
+from hydra_yaml_lsp.server import HydraYamlLanguageServer
 
 from .callable_arg import get_callable_arg_completions
 from .import_path import get_import_path_completions
@@ -13,7 +14,7 @@ from .special_key_value import get_hydra_special_key_value_completions
 logger = logging.getLogger(__name__)
 
 
-def register(server: LanguageServer) -> None:
+def register(server: HydraYamlLanguageServer) -> None:
     """Register completion functionality to the server.
 
     Sets up completion providers for YAML files using LSP.
@@ -28,6 +29,9 @@ def register(server: LanguageServer) -> None:
     )
     def completions(params: lsp.CompletionParams) -> lsp.CompletionList:
         document_uri = params.text_document.uri
+        if not server.is_in_config_dir(document_uri):
+            return lsp.CompletionList(False, [])
+
         position = params.position
 
         document = server.workspace.get_document(document_uri)

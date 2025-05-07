@@ -1,9 +1,9 @@
 """Hydra YAML semantic token provider implementation."""
 
 import logging
+from pathlib import Path
 
 from lsprotocol import types as lsp
-from pygls.server import LanguageServer
 from pygls.workspace import Document
 
 from hydra_yaml_lsp.core.detections import (
@@ -14,6 +14,7 @@ from hydra_yaml_lsp.core.detections import (
     detect_target_paths,
     detect_target_values,
 )
+from hydra_yaml_lsp.server import HydraYamlLanguageServer
 
 from .builder import (
     SemanticToken,
@@ -25,7 +26,7 @@ from .builder import (
 logger = logging.getLogger(__name__)
 
 
-def register(server: LanguageServer) -> None:
+def register(server: HydraYamlLanguageServer) -> None:
     """Register semantic token functionality to the server."""
 
     @server.feature(
@@ -38,6 +39,9 @@ def register(server: LanguageServer) -> None:
     def semantic_tokens_full(params: lsp.SemanticTokensParams) -> lsp.SemanticTokens:
         """Provide semantic tokens for YAML documents."""
         document_uri = params.text_document.uri
+        if not server.is_in_config_dir(document_uri):
+            return lsp.SemanticTokens(data=[])
+
         document = server.workspace.get_document(document_uri)
         data = get_tokens_data_for_document(document)
         return lsp.SemanticTokens(data=data)

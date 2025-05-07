@@ -1,38 +1,33 @@
 """Hydra YAML Language Server implementation."""
 
 import logging
+from pathlib import Path
 
 from pygls.server import LanguageServer
-
-from .completions import register as register_completion_items
-from .semantic_tokens import register as register_semantic_tokens
-
-logger = logging.getLogger("hydra-yaml-lsp")
+from pygls.uris import to_fs_path
 
 
 class HydraYamlLanguageServer(LanguageServer):
-    """Language Server for Hydra YAML files.
+    """Language Server for Hydra YAML files."""
 
-    Provides completions, diagnostics, and other LSP features for YAML
-    files that use Hydra configuration.
-    """
+    config_dir: str = ""
 
     def __init__(self) -> None:
         """Initialize the Hydra YAML language server."""
         super().__init__("hydra-yaml-server", "v0.1")
+        self.logger = logging.getLogger("hydra-yaml-server")
+        self.logger.info("Hydra YAML Language Server initialized")
 
-        logger.info("Hydra YAML Language Server initialized")
+    def is_in_config_dir(self, file_uri: str) -> bool:
+        """Check if file is in the configured directory."""
+        if not self.config_dir:
+            return False  # If no config dir set, process no files
 
+        path = to_fs_path(file_uri)
+        if path is None:
+            return False
+        file_path = Path(path).absolute()
+        config_path = Path(self.config_dir).absolute()
 
-def start_server() -> None:
-    """Start the LSP server."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.StreamHandler()],
-    )
-    server = HydraYamlLanguageServer()
-    register_semantic_tokens(server)
-    register_completion_items(server)
-
-    server.start_io()
+        # Handle absolute and relative paths
+        return str(file_path).startswith(str(config_path))

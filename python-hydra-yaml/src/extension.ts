@@ -26,13 +26,36 @@ export async function getActivePythonPath(): Promise<string | undefined> {
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log('Activating Hydra YAML extension');
 
-  try {
-    // Get Python interpreter path
-    const pythonPath = await getActivePythonPath();
-	if (!pythonPath){
-		console.log("Can not get Python Interpreter.");
-		return;
-	}
+    // Register the selectConfigDir command
+    const selectConfigDirCommand = vscode.commands.registerCommand(
+      'python-hydra-yaml.selectConfigDir',
+      selectConfigDir
+    );
+    context.subscriptions.push(selectConfigDirCommand);
+
+    // Check if configDir is set, and prompt user if not
+    let configDir = vscode.workspace.getConfiguration('pythonHydraYaml').get('configDir', '');
+    if (!configDir) {
+      const result = await vscode.window.showInformationMessage(
+        'No Hydra configuration directory selected. Would you like to select one?',
+        'Select Directory', 'Cancel'
+      );
+
+      if (result === 'Select Directory') {
+        configDir = await selectConfigDir() || '';
+      }
+    }
+    if (!configDir){
+        return;
+    }
+
+    try {
+      // Get Python interpreter path
+      const pythonPath = await getActivePythonPath();
+    if (!pythonPath){
+      console.log("Can not get Python Interpreter.");
+      return;
+    }
     console.log(`Using Python interpreter: ${pythonPath}`);
 
     // Server module path
@@ -61,17 +84,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         fileEvents: vscode.workspace.createFileSystemWatcher('**/*.{yaml,yml}'),
       },
       initializationOptions: {
-        configDirs: vscode.workspace.getConfiguration('pythonHydraYaml').get('configDirs', [])
-      },
-      middleware: {
-        workspace: {
-          didChangeConfiguration: async () => {
-            // Send settings update request if settings are changed.
-            client?.sendNotification('custom/updateConfiguration', {
-              configDirs: vscode.workspace.getConfiguration('pythonHydraYaml').get('configDir', '')
-            });
-          }
-        }
+        configDir: configDir
       }
     };
 
@@ -147,4 +160,26 @@ export function deactivate(): Thenable<void> | undefined {
   }
   console.log('Deactivating Hydra YAML extension');
   return client.stop();
+}
+
+
+// Function to select config directory
+async function selectConfigDir(): Promise<string | undefined> {
+  const options: vscode.OpenDialogOptions = {
+    canSelectFolders: true,
+    canSelectFiles: false,
+    canSelectMany: false,
+    openLabel: 'Select Hydra Config Directory'
+  };
+
+  const fileUri = await vscode.window.showOpenDialog(options);
+  if (fileUri && fileUri.length > 0) {
+    const dirPath = fileUri[0].fsPath;
+    // Update configuration
+    await vscode.workspace.getConfiguration('pythonHydraYaml').update('configDir', dirPath);
+    vscode.window.showInformationMessage(`Hydra config directory set to: ${dirPath}`);
+    return dirPath;
+  }
+
+  return undefined;
 }

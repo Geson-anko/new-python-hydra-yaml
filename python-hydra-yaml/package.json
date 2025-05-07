@@ -29,6 +29,10 @@
       {
         "command": "python-hydra-yaml.triggerCompletionWithEnter",
         "title": "Trigger YAML Completion with Enter"
+      },
+      {
+        "command": "python-hydra-yaml.selectConfigDir",
+        "title": "Select Hydra Configuration Directory"
       }
     ],
     "keybindings": [

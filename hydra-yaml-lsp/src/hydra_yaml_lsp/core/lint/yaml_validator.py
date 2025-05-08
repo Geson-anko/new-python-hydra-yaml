@@ -40,11 +40,8 @@ def validate_yaml(content: str) -> tuple[Message, ...]:
     ) as e:
         # Extract error position information
         problem_mark = e.problem_mark
-        print(e.context)
-        print(type(problem_mark), type(e))
         if not isinstance(problem_mark, StringMark):
             return ()
-        print(e)
 
         # Create a helpful error message
         match e:
@@ -56,18 +53,20 @@ def validate_yaml(content: str) -> tuple[Message, ...]:
                 error_msg = f"YAML composition error: {str(e)}"
             case constructor.DuplicateKeyError():
                 error_msg = f"YAML constructor error: {str(e)}"
+
+        problem_line = content.splitlines()[problem_mark.line]
+
         position = Position(
             start_line=problem_mark.line,
             end_line=problem_mark.line,
-            start_column=problem_mark.column,
-            end_column=problem_mark.column + 1,
+            start_column=len(problem_line) - len(problem_line.lstrip()),
+            end_column=len(problem_line),
         )
 
         messages.append(
             Message(content=error_msg, type=MessageType.ERROR, position=position)
         )
     except Exception as e:
-        print(type(e))
         # Catch any other exceptions
         logger.error(f"Unexpected error during YAML validation: {str(e)}")
         messages.append(

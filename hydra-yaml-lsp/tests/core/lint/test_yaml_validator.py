@@ -44,6 +44,8 @@ class TestYamlValidator:
         assert messages[0].type == MessageType.ERROR
         assert "YAML syntax error" in messages[0].content
         assert messages[0].position.start_line == 2  # 0-indexed, so line 3
+        assert messages[0].position.start_column == 2
+        assert messages[0].position.end_column == 2 + len("wrong_indent: value")
 
     def test_constructor_error(self):
         """Test validation with duplicate keys."""

@@ -7,6 +7,7 @@ from typing import Any
 from lsprotocol import types as lsp
 
 from .completions import register as register_completion_items
+from .diagnostics import register as register_diagnostics
 from .semantic_tokens import register as register_semantic_tokens
 from .server import HydraYamlLanguageServer
 
@@ -42,6 +43,7 @@ def start_server() -> None:
 
     register_semantic_tokens(server)
     register_completion_items(server)
+    register_diagnostics(server)
 
     server.start_io()
 

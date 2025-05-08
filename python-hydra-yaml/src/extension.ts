@@ -3,7 +3,7 @@ import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
-  TransportKind
+  TransportKind,
 } from 'vscode-languageclient/node';
 import { PythonExtension } from '@vscode/python-extension';
 
@@ -41,18 +41,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(selectConfigDirCommand);
 
   // Check if configDir is set, and prompt user if not
-  let configDir = vscode.workspace.getConfiguration('pythonHydraYaml').get('configDir', '');
+  let configDir = vscode.workspace
+    .getConfiguration('pythonHydraYaml')
+    .get('configDir', '');
   if (!configDir) {
     const result = await vscode.window.showInformationMessage(
       'No Hydra configuration directory selected. Would you like to select one?',
-      'Select Directory', 'Cancel'
+      'Select Directory',
+      'Cancel'
     );
 
     if (result === 'Select Directory') {
-      configDir = await selectConfigDir() || '';
+      configDir = (await selectConfigDir()) || '';
     }
   }
-  if (!configDir){
+  if (!configDir) {
     return;
   }
 
@@ -64,7 +67,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (!pythonPath) {
       const result = await vscode.window.showInformationMessage(
         'No Python interpreter selected. Would you like to select one?',
-        'Select Interpreter', 'Cancel'
+        'Select Interpreter',
+        'Cancel'
       );
 
       if (result === 'Select Interpreter') {
@@ -72,8 +76,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
 
       if (!pythonPath) {
-        console.log("Can not get Python Interpreter.");
-        vscode.window.showErrorMessage('Failed to start Hydra YAML Language Server: No Python interpreter selected');
+        console.log('Can not get Python Interpreter.');
+        vscode.window.showErrorMessage(
+          'Failed to start Hydra YAML Language Server: No Python interpreter selected'
+        );
         return;
       }
     }
@@ -89,22 +95,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       args: serverArgs,
       transport: TransportKind.stdio,
       options: {
-        env: { ...process.env }
-      }
+        env: { ...process.env },
+      },
     };
 
     // Client options
     const clientOptions: LanguageClientOptions = {
       outputChannelName: 'Hydra YAML Language Server',
-      documentSelector: [
-        { scheme: 'file', language: 'yaml' }
-      ],
+      documentSelector: [{ scheme: 'file', language: 'yaml' }],
       synchronize: {
         fileEvents: vscode.workspace.createFileSystemWatcher('**/*.{yaml,yml}'),
       },
       initializationOptions: {
-        configDir: configDir
-      }
+        configDir: configDir,
+      },
     };
 
     // Create and start the client
@@ -122,51 +126,63 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         if (client) {
           client.stop();
         }
-      }
+      },
     });
 
     console.log('Hydra YAML Language Server started');
 
     // Register restart command
-    const restartCommand = vscode.commands.registerCommand('python-hydra-yaml.restart', async () => {
-      if (!client) {
-        return;
+    const restartCommand = vscode.commands.registerCommand(
+      'python-hydra-yaml.restart',
+      async () => {
+        if (!client) {
+          return;
+        }
+        try {
+          await client.stop();
+          client.start();
+          vscode.window.showInformationMessage('Hydra YAML Language Server restarted');
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to restart server: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
       }
-      try {
-        await client.stop();
-        client.start();
-        vscode.window.showInformationMessage('Hydra YAML Language Server restarted');
-      } catch (error) {
-        vscode.window.showErrorMessage(`Failed to restart server: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    });
+    );
 
     context.subscriptions.push(restartCommand);
 
     // Shift+Enter for trigger completion.
-    const triggerCompletionCommand = vscode.commands.registerCommand('python-hydra-yaml.triggerCompletionWithEnter', async () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor) {
-        return;
-      }
+    const triggerCompletionCommand = vscode.commands.registerCommand(
+      'python-hydra-yaml.triggerCompletionWithEnter',
+      async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+          return;
+        }
 
-      await vscode.commands.executeCommand('type', { text: '\n' });
-      await vscode.commands.executeCommand('editor.action.triggerSuggest');
-    });
+        await vscode.commands.executeCommand('type', { text: '\n' });
+        await vscode.commands.executeCommand('editor.action.triggerSuggest');
+      }
+    );
 
     context.subscriptions.push(triggerCompletionCommand);
 
     // Register status bar item to show server status
-    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    const statusBarItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Right,
+      100
+    );
     statusBarItem.text = '$(plug) Hydra YAML';
     statusBarItem.tooltip = 'Hydra YAML Language Server active';
     statusBarItem.command = 'python-hydra-yaml.restart';
     statusBarItem.show();
 
     context.subscriptions.push(statusBarItem);
-
   } catch (error) {
-    vscode.window.showErrorMessage(`Failed to start Hydra YAML Language Server: ${error instanceof Error ? error.message : String(error)}`);
+    vscode.window.showErrorMessage(
+      `Failed to start Hydra YAML Language Server: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -184,14 +200,16 @@ async function selectConfigDir(): Promise<string | undefined> {
     canSelectFolders: true,
     canSelectFiles: false,
     canSelectMany: false,
-    openLabel: 'Select Hydra Config Directory'
+    openLabel: 'Select Hydra Config Directory',
   };
 
   const fileUri = await vscode.window.showOpenDialog(options);
   if (fileUri && fileUri.length > 0) {
     const dirPath = fileUri[0].fsPath;
     // Update configuration
-    await vscode.workspace.getConfiguration('pythonHydraYaml').update('configDir', dirPath);
+    await vscode.workspace
+      .getConfiguration('pythonHydraYaml')
+      .update('configDir', dirPath);
     vscode.window.showInformationMessage(`Hydra config directory set to: ${dirPath}`);
     return dirPath;
   }

@@ -24,10 +24,6 @@ repos:
       - id: check-symlinks
       - id: mixed-line-ending
       - id: requirements-txt-fixer
-      - id: pretty-format-json
-        args:
-          - "--autofix"
-          - "--no-sort-keys"
 
   # To ensure the lockfile is up-to-date
   - repo: https://github.com/astral-sh/uv-pre-commit

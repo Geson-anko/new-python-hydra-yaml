@@ -1,0 +1,67 @@
+name: Test Python Server
+
+on:
+  push:
+    branches: [main, stable]
+    paths:
+      - "hydra-yaml-lsp/**/*.py"
+      - "hydra-yaml-lsp/**/*.pyi"
+      - ".github/workflows/test.yml"
+      - "hydra-yaml-lsp/pyproject.toml"
+      - "hydra-yaml-lsp/uv.lock"
+  pull_request:
+    branches: [main, stable]
+    paths:
+      - "hydra-yaml-lsp/**/*.py"
+      - "hydra-yaml-lsp/**/*.pyi"
+      - ".github/workflows/test.yml"
+      - "hydra-yaml-lsp/pyproject.toml"
+      - "hydra-yaml-lsp/uv.lock"
+
+env:
+  PYTHON_VERSION: "3.12"
+  UV_VERSION: "0.5.10"
+
+jobs:
+  run_tests:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: hydra-yaml-lsp
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-22.04", "ubuntu-24.04"]
+        python-version: ["3.12", "3.13"]
+
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: hydra-yaml-lsp/.venv
+          key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('hydra-yaml-lsp/uv.lock', 'hydra-yaml-lsp/pyproject.toml') }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Check installed packages
+        run: |
+          echo "Python version:"
+          uv run python -V
+          echo "All installed packages:"
+          uv run pip list
+
+      - name: Run pytest with coverage
+        run: |
+          uv run pytest -v --log-level=INFO --cov

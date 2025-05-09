@@ -1,6 +1,6 @@
 {
   "name": "python-hydra-yaml",
-  "displayName": "python-hydra-yaml",
+  "displayName": "Python Hydra YAML",
   "description": "VSCode extension providing intelligent autocompletion and validation for Hydra configuration files.",
   "version": "0.4.3",
   "license": "MIT",

@@ -36,7 +36,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: python-package-distributions
-        path: dist/
+        path: hydra-yaml-lsp/dist/
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
@@ -56,9 +56,11 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: python-package-distributions
-        path: dist/
+        path: hydra-yaml-lsp/dist/
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        packages-dir: hydra-yaml-lsp/dist/
 
   github-release:
     name: >-
@@ -80,13 +82,13 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: python-package-distributions
-        path: dist/
+        path: hydra-yaml-lsp/dist/
     - name: Sign the dists with Sigstore
       uses: sigstore/gh-action-sigstore-python@v3.0.0
       with:
         inputs: >-
-          ./dist/*.tar.gz
-          ./dist/*.whl
+          ./hydra-yaml-lsp/dist/*.tar.gz
+          ./hydra-yaml-lsp/dist/*.whl
     - name: Upload artifact signatures to GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}

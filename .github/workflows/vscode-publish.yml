@@ -6,7 +6,11 @@ on:
       - "vscode-*"
 
 jobs:
-  build:
+  publish:
+    permissions:
+        contents: write  # IMPORTANT: mandatory for GitHub Releases operations
+        id-token: write  # IMPORTANT: mandatory for sigstore
+
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,37 +34,6 @@ jobs:
         run: |
           yarn global add @vscode/vsce
           vsce package
-
-      - name: Upload Extension Package
-        uses: actions/upload-artifact@v4
-        with:
-          name: extension-package
-          path: python-hydra-yaml/*.vsix
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: python-hydra-yaml
-    permissions:
-      contents: write  # IMPORTANT: mandatory for GitHub Releases operations
-      id-token: write  # IMPORTANT: mandatory for sigstore
-
-    steps:
-      - name: Download Extension Package
-        uses: actions/download-artifact@v4
-        with:
-          name: extension-package
-          path: python-hydra-yaml
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install vsce
-        run: yarn global add @vscode/vsce
 
       - name: Publish to VS Code Marketplace
         run: vsce publish -p ${{ secrets.VSCE_PAT }}

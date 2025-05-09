@@ -31,9 +31,6 @@ make venv  # Sets up virtual environment with all dependencies
 ## 🧰 Requirements
 
 - Python 3.12+
-- hydra-core>=1.3.2
-- pygls>=1.3.1
-- ruamel-yaml>=0.18.10
 
 ## 📝 Usage
 

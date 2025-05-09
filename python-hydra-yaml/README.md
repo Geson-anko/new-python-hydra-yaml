@@ -1,4 +1,4 @@
-![logo](https://media.githubusercontent.com/media/Geson-anko/python-hydra-yaml/refs/heads/main/python-hydra-yaml/docs/images/logo.png)
+![logo](https://github.com/Geson-anko/python-hydra-yaml/blob/main/python-hydra-yaml/docs/images/logo.png?raw=true)
 
 # 🐉 Hydra YAML VSCode Client
 
@@ -15,7 +15,7 @@ About Hydra: <https://hydra.cc>
 - 🧩 Argument completion based on target Python classes
 - 🎨 Semantic highlighting for Hydra special elements
 
-![sample](https://media.githubusercontent.com/media/Geson-anko/python-hydra-yaml/refs/heads/main/python-hydra-yaml/docs/images/sample.png)
+![sample](https://github.com/Geson-anko/python-hydra-yaml/blob/main/python-hydra-yaml/docs/images/sample.png?raw=true)
 
 ## 📄 License
 

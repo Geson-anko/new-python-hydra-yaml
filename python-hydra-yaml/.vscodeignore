@@ -2,7 +2,9 @@
 .vscode-test/**
 src/**
 .gitignore
+.prettierignore
 .yarnrc
+.prettierrc.json
 vsc-extension-quickstart.md
 **/tsconfig.json
 **/eslint.config.mjs

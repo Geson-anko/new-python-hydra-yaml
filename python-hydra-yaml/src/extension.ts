@@ -86,6 +86,33 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     console.log(`Using Python interpreter: ${pythonPath}`);
 
+    // Check if language server is installed
+    const isLanguageServerInstalled = await checkIfLanguageServerInstalled(pythonPath);
+    if (!isLanguageServerInstalled) {
+      const installOption = await vscode.window.showInformationMessage(
+        'Language server is not installed. Would you like to run `pip install hydra-yaml-lsp`?',
+        'Install',
+        'Cancel'
+      );
+
+      if (installOption === 'Install') {
+        // Install language server
+        const success = await installLanguageServer(pythonPath);
+        if (!success) {
+          vscode.window.showErrorMessage(
+            'Failed to install Hydra YAML Language Server.'
+          );
+          return;
+        }
+        vscode.window.showInformationMessage(
+          'Hydra YAML Language Server has been installed.'
+        );
+      } else {
+        vscode.window.showInformationMessage('Disable language server');
+        return;
+      }
+    }
+
     // Server module path
     const serverArgs = ['-m', 'hydra_yaml_lsp'];
 
@@ -215,4 +242,70 @@ async function selectConfigDir(): Promise<string | undefined> {
   }
 
   return undefined;
+}
+
+/**
+ * Checks if the hydra_yaml_lsp package is installed
+ */
+async function checkIfLanguageServerInstalled(pythonPath: string): Promise<boolean> {
+  try {
+    const result = await new Promise<{ stdout: string; stderr: string }>(
+      (resolve, reject) => {
+        const { exec } = require('child_process');
+        exec(
+          `"${pythonPath}" -c "import hydra_yaml_lsp; print('installed')"`,
+          (error: Error | null, stdout: string, stderr: string) => {
+            if (error) {
+              // Import failed, module not installed
+              resolve({ stdout: '', stderr: error.message });
+            } else {
+              resolve({ stdout, stderr });
+            }
+          }
+        );
+      }
+    );
+
+    return result.stdout.trim() === 'installed';
+  } catch (error) {
+    console.error('Error checking for language server installation:', error);
+    return false;
+  }
+}
+
+/**
+ * Installs the hydra_yaml_lsp package using pip
+ */
+async function installLanguageServer(pythonPath: string): Promise<boolean> {
+  try {
+    const terminal = vscode.window.createTerminal('Hydra YAML Installer');
+    terminal.show();
+
+    // Run pip install command
+    terminal.sendText(`"${pythonPath}" -m pip install hydra-yaml-lsp`);
+
+    // Wait for installation to complete
+    const result = await new Promise<boolean>((resolve) => {
+      // Poll for installation completion
+      const checkInstall = setInterval(async () => {
+        const isInstalled = await checkIfLanguageServerInstalled(pythonPath);
+        if (isInstalled) {
+          clearInterval(checkInstall);
+          resolve(true);
+        }
+      }, 2000);
+
+      // Set a timeout
+      setTimeout(() => {
+        clearInterval(checkInstall);
+        resolve(false);
+      }, 60000); // 1 minute timeout
+    });
+
+    terminal.dispose();
+    return result;
+  } catch (error) {
+    console.error('Error installing language server:', error);
+    return false;
+  }
 }

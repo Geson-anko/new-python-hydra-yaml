@@ -5,6 +5,7 @@
   "version": "0.4.0",
   "license": "MIT",
   "icon": "./docs/images/logo.png",
+  "publisher": "GesonAnko",
   "repository": {
     "type": "git",
     "url": "https://github.com/Geson-anko/python-hydra-yaml.git"

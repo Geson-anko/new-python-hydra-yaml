@@ -1,14 +1,48 @@
 [project]
 name = "hydra-yaml-lsp"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.1"
+description = "Language Server Protocol implementation for Hydra YAML configuration files"
 readme = "README.md"
+license = "MIT"
 authors = []
 requires-python = ">=3.12"
 dependencies = [
     "hydra-core>=1.3.2",
     "pygls>=1.3.1",
     "ruamel-yaml>=0.18.10",
+]
+
+keywords = [
+    "hydra",
+    "yaml",
+    "lsp",
+    "language-server",
+    "language-server-protocol",
+    "vscode",
+    "editor",
+    "completion",
+    "intellisense",
+    "configuration",
+    "autocomplete"
+]
+
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Editors",
+    "Topic :: Text Editors :: Integrated Development Environments (IDE)",
+    "Topic :: Text Processing :: Markup",
+    "Environment :: Plugins",
+    "Typing :: Typed"
 ]
 
 [build-system]
@@ -22,6 +56,10 @@ dev = [
     "pytest>=8.3.5",
     "pytest-mock>=3.14.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/Geson-anko/python-hydra-yaml"
+Issues = "https://github.com/Geson-anko/python-hydra-yaml/issues"
 
 
 [tool.pytest.ini_options]

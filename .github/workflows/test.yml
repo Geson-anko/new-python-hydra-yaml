@@ -11,12 +11,6 @@ on:
       - "hydra-yaml-lsp/uv.lock"
   pull_request:
     branches: [main, stable]
-    paths:
-      - "hydra-yaml-lsp/**/*.py"
-      - "hydra-yaml-lsp/**/*.pyi"
-      - ".github/workflows/test.yml"
-      - "hydra-yaml-lsp/pyproject.toml"
-      - "hydra-yaml-lsp/uv.lock"
 
 env:
   PYTHON_VERSION: "3.12"

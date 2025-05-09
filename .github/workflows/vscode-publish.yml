@@ -1,0 +1,45 @@
+name: Publish VS Code Extension
+
+on:
+  push:
+    tags:
+      - "vscode-*"
+
+jobs:
+  publish:
+    permissions:
+        contents: write  # IMPORTANT: mandatory for GitHub Releases operations
+        id-token: write  # IMPORTANT: mandatory for sigstore
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python-hydra-yaml
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: 'python-hydra-yaml/yarn.lock'
+
+      - name: Install Dependencies
+        run: yarn install
+
+      - name: Package Extension
+        run: |
+          yarn global add @vscode/vsce
+          vsce package
+
+      - name: Publish to VS Code Marketplace
+        run: vsce publish -p ${{ secrets.VSCE_PAT }}
+
+      - name: Upload Extension to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" *.vsix --repo "$GITHUB_REPOSITORY"

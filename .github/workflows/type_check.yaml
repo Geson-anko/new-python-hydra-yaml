@@ -4,19 +4,19 @@ on:
   push:
     branches: [main, stable]
     paths:
-      - "**/*.py"
-      - "**/*.pyi"
+      - "hydra-yaml-lsp/**/*.py"
+      - "hydra-yaml-lsp/**/*.pyi"
       - ".github/workflows/type_check.yaml"
-      - "pyproject.toml"
-      - "uv.lock"
+      - "hydra-yaml-lsp/hydra-yaml-lsp/pyproject.toml"
+      - "hydra-yaml-lsp/uv.lock"
   pull_request:
     branches: [main, stable]
     paths:
-      - "**/*.py"
-      - "**/*.pyi"
+      - "hydra-yaml-lsp/**/*.py"
+      - "hydra-yaml-lsp/**/*.pyi"
       - ".github/workflows/type_check.yaml"
-      - "pyproject.toml"
-      - "uv.lock"
+      - "hydra-yaml-lsp/pyproject.toml"
+      - "hydra-yaml-lsp/uv.lock"
 
 env:
   PYTHON_VERSION: "3.12"

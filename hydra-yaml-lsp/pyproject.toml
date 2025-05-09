@@ -3,7 +3,7 @@ name = "hydra-yaml-lsp"
 version = "0.1.0"
 description = "Language Server Protocol implementation for Hydra YAML configuration files"
 readme = "README.md"
-license = { file = "../LICENSE" }
+license = "MIT"
 authors = []
 requires-python = ">=3.12"
 dependencies = [

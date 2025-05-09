@@ -1,15 +1,31 @@
 {
   "name": "python-hydra-yaml",
   "displayName": "python-hydra-yaml",
-  "description": "",
-  "version": "0.0.1",
+  "description": "VSCode extension providing intelligent autocompletion and validation for Hydra configuration files.",
+  "version": "0.4.0",
   "license": "MIT",
+  "icon": "./docs/images/logo.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Geson-anko/python-hydra-yaml.git"
+  },
+  "homepage": "https://github.com/Geson-anko/python-hydra-yaml",
+  "categories": [
+    "Linters",
+    "Data Science",
+    "Machine Learning",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "hydra",
+    "python",
+    "yaml",
+    "omegaconf",
+    "config"
+  ],
   "engines": {
     "vscode": "^1.99.0"
   },
-  "categories": [
-    "Programming Languages"
-  ],
   "activationEvents": [
     "onLanguage:yaml"
   ],
